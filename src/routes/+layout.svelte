@@ -22,6 +22,8 @@ let { children } = $props();
 			<div class="nav-links">
 				<a href="/">~/hjem</a>
 				<a href="/projects">~/prosjekter</a>
+				<a href="/om">~/om</a>
+
 			</div>
 		</nav>
 	</header>

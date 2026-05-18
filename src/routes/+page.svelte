@@ -21,14 +21,6 @@ import { projects } from '$lib/projects';
 	</p>
 </section>
 
-<section class="terminal-panel about">
-	<p class="prompt">$ cat ./om.txt</p>
-	<p>
-		Her samler jeg prototyper, verktøy og idéer som lukter litt kode, litt språkmodell og litt ren
-		nysgjerrighet.
-	</p>
-</section>
-
 <section class="terminal-panel projects">
 	<div class="section-head">
 		<p class="prompt">$ ls ./prosjekter</p>
@@ -44,7 +36,6 @@ import { projects } from '$lib/projects';
 
 <style>
 	.hero,
-		.about,
 		.projects {
 		display: grid;
 		gap: 1rem;
@@ -83,8 +74,7 @@ import { projects } from '$lib/projects';
 		animation: blink 1s steps(1) infinite;
 	}
 
-	.intro,
-		.about p:last-child {
+	.intro {
 		max-width: 65ch;
 		color: var(--color-text-soft);
 	}
