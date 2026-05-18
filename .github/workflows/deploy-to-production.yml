@@ -18,6 +18,8 @@ jobs:
         run: bun install
 
       - name: Build ulik.no
+        env:
+          APP_VERSION: ${{ github.event.release.tag_name }}
         run: |
           bun run check
           bun run test -- --run

@@ -8,6 +8,9 @@ const config = {
 	},
 	kit: {
 		adapter: adapter(),
+		version: {
+			name: process.env.APP_VERSION || 'dev',
+		},
 	},
 };
 

@@ -31,6 +31,8 @@ jobs:
         run: bun install
 
       - name: Build ulik.no
+        env:
+          APP_VERSION: ${{ steps.tag-version.outputs.version }}
         run: |
           bun run check
           bun run test -- --run

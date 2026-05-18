@@ -1,9 +1,9 @@
 <script lang="ts">
 import '../app.css';
+import { version } from '$app/environment';
 import favicon from '$lib/assets/favicon.svg';
 
 let { children } = $props();
-const year = new Date().getFullYear();
 </script>
 
 <svelte:head>
@@ -30,7 +30,7 @@ const year = new Date().getFullYear();
 	</main>
 
 	<footer class="shell-footer">
-		<span>≠ ulik.no — {year}</span>
+		<span>≠ ulik.no — {version}</span>
 	</footer>
 </div>
 
