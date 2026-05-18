@@ -15,7 +15,7 @@ jobs:
   update_release_draft:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Lag nytt endelig versjonsnummer
         uses: wendbv/calver-tag-action@v2.0.0
