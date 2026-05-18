@@ -2,6 +2,14 @@ import type { Project } from './types';
 
 export const projects: Project[] = [
 	{
+		id: 'flyt-felt',
+		title: 'flyt≠felt',
+		description: 'Et abstrakt, bevegelig bilde generert av et flow field på canvas.',
+		tags: ['canvas', 'generativ', 'animasjon'],
+		href: '/projects/flyt-felt',
+		status: 'active',
+	},
+	{
 		id: 'prompt-lab',
 		title: 'prompt≠lab',
 		description: 'Eksperimenter med AI-prompts og se hva som skjer.',
