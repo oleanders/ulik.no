@@ -2,6 +2,14 @@ import type { Project } from './types';
 
 export const projects: Project[] = [
 	{
+		id: 'fall-haug',
+		title: 'fall≠ned',
+		description: 'Se alle elementer falle ned og lande i en haug på bunnen.',
+		tags: ['animasjon', 'css', 'eksperiment'],
+		href: '/projects/fall-haug',
+		status: 'active',
+	},
+	{
 		id: 'flyt-felt',
 		title: 'flyt≠felt',
 		description: 'Et abstrakt, bevegelig bilde generert av et flow field på canvas.',
