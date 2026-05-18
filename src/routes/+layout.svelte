@@ -2,6 +2,7 @@
 import '../app.css';
 import { version } from '$app/environment';
 import favicon from '$lib/assets/favicon.svg';
+import DeployStatus from '$lib/components/DeployStatus.svelte';
 
 let { children } = $props();
 </script>
@@ -31,6 +32,7 @@ let { children } = $props();
 
 	<footer class="shell-footer">
 		<span>≠ ulik.no — {version}</span>
+		<DeployStatus />
 	</footer>
 </div>
 
@@ -98,6 +100,11 @@ let { children } = $props();
 		padding: 0 0 2rem;
 		color: var(--color-text-muted);
 		font-size: 0.9rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		flex-wrap: wrap;
 	}
 
 	@media (max-width: 640px) {
