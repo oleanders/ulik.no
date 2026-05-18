@@ -23,6 +23,6 @@ export const projects: Project[] = [
 		description: 'Sammenlign to tekster og finn forskjellene.',
 		tags: ['verktøy', 'tekst'],
 		href: '/projects/diff-tool',
-		status: 'wip',
+		status: 'active',
 	},
 ];
