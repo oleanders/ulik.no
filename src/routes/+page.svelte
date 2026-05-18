@@ -45,6 +45,10 @@ import { projects } from '$lib/projects';
 		padding-top: 1rem;
 	}
 
+	.projects {
+		margin-top: 1.25rem;
+	}
+
 	.hero-mark {
 		font-size: clamp(5rem, 18vw, 10rem);
 		line-height: 0.9;

@@ -1,6 +1,7 @@
 <script lang="ts">
 import '../app.css';
 import { version } from '$app/environment';
+import { page } from '$app/state';
 import favicon from '$lib/assets/favicon.svg';
 import DeployStatus from '$lib/components/DeployStatus.svelte';
 
@@ -20,10 +21,25 @@ let { children } = $props();
 		<nav aria-label="Hovednavigasjon">
 			<a href="/" class="logo" aria-label="ulik.no hjem">≠</a>
 			<div class="nav-links">
-				<a href="/">~/hjem</a>
-				<a href="/projects">~/prosjekter</a>
-				<a href="/om">~/om</a>
-
+				<a
+					href="/"
+					class="menu-link"
+					class:active={page.url.pathname === '/'}
+					aria-current={page.url.pathname === '/' ? 'page' : undefined}>~/hjem</a
+				>
+				<a
+					href="/projects"
+					class="menu-link"
+					class:active={page.url.pathname.startsWith('/projects')}
+					aria-current={page.url.pathname.startsWith('/projects') ? 'page' : undefined}
+					>~/prosjekter</a
+				>
+				<a
+					href="/om"
+					class="menu-link"
+					class:active={page.url.pathname === '/om'}
+					aria-current={page.url.pathname === '/om' ? 'page' : undefined}>~/om</a
+				>
 			</div>
 		</nav>
 	</header>
@@ -85,17 +101,52 @@ let { children } = $props();
 		gap: 1rem;
 	}
 
-	.nav-links a {
+	.menu-link {
+		position: relative;
+		overflow: hidden;
 		color: var(--color-text);
 		padding: 0.35rem 0.65rem;
 		border: 1px solid transparent;
 		border-radius: 999px;
+		transition:
+			transform 130ms ease,
+			border-color 130ms ease,
+			box-shadow 130ms ease,
+			color 130ms ease,
+			background 130ms ease;
 	}
 
-	.nav-links a:hover,
-		.nav-links a:focus-visible {
+	.menu-link::after {
+		content: '';
+		position: absolute;
+		inset: -180% -40%;
+		background: radial-gradient(circle, rgba(0, 255, 136, 0.7) 0%, rgba(0, 255, 136, 0) 68%);
+		opacity: 0;
+		pointer-events: none;
+	}
+
+	.menu-link:hover,
+		.menu-link:focus-visible {
 		border-color: var(--color-border-strong);
 		background: var(--color-surface);
+	}
+
+	.menu-link:active {
+		transform: translateY(1px) scale(0.96);
+		border-color: var(--color-primary);
+		box-shadow: 0 0 18px color-mix(in srgb, var(--color-primary) 45%, transparent);
+	}
+
+	.menu-link:active::after {
+		animation: nav-click 260ms ease-out;
+	}
+
+	.menu-link.active {
+		font-weight: 700;
+		color: var(--color-primary);
+		border-color: color-mix(in srgb, var(--color-primary) 65%, transparent);
+		background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+		text-shadow: 0 0 12px color-mix(in srgb, var(--color-primary) 45%, transparent);
 	}
 
 	.shell-footer {
@@ -107,6 +158,17 @@ let { children } = $props();
 		justify-content: space-between;
 		gap: 1rem;
 		flex-wrap: wrap;
+	}
+
+	@keyframes nav-click {
+		from {
+			opacity: 0.75;
+			transform: scale(0.15);
+		}
+		to {
+			opacity: 0;
+			transform: scale(1.2);
+		}
 	}
 
 	@media (max-width: 640px) {

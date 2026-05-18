@@ -34,6 +34,23 @@ let { project }: { project: Project } = $props();
 		border: 1px solid var(--color-border);
 		border-radius: 0.9rem;
 		background: var(--color-surface-alt);
+		position: relative;
+		overflow: hidden;
+		transition:
+			transform 140ms ease,
+			border-color 140ms ease,
+			box-shadow 140ms ease;
+		will-change: transform;
+	}
+
+	.card::after {
+		content: '';
+		position: absolute;
+		inset: -40%;
+		border-radius: 50%;
+		background: radial-gradient(circle, rgba(0, 204, 255, 0.7) 0%, rgba(0, 204, 255, 0) 62%);
+		opacity: 0;
+		pointer-events: none;
 	}
 
 	.card:hover,
@@ -41,6 +58,19 @@ let { project }: { project: Project } = $props();
 		border-color: var(--color-secondary);
 		transform: translateY(-2px);
 		box-shadow: 0 0 18px rgba(0, 204, 255, 0.12);
+	}
+
+	.card:active {
+		transform: translateY(1px) scale(0.97);
+		border-color: var(--color-primary);
+		box-shadow:
+			0 0 0 1px color-mix(in srgb, var(--color-primary) 45%, transparent),
+			0 0 26px rgba(0, 255, 136, 0.28),
+			inset 0 0 14px rgba(0, 255, 136, 0.22);
+	}
+
+	.card:active::after {
+		animation: click-flash 320ms ease-out;
 	}
 
 	.card-head {
@@ -91,5 +121,17 @@ let { project }: { project: Project } = $props();
 
 	.status.idea {
 		color: var(--color-secondary);
+	}
+
+	@keyframes click-flash {
+		from {
+			opacity: 0.8;
+			transform: scale(0.1);
+		}
+
+		to {
+			opacity: 0;
+			transform: scale(2.2);
+		}
 	}
 </style>
