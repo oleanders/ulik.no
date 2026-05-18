@@ -1,0 +1,46 @@
+name: Deploy to production when release is published
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build ulik.no
+        run: |
+          bun run check
+          bun run test -- --run
+          bun run build
+
+      - run: echo "Version ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Publish to beta.ulik.no
+        uses: w9jds/firebase-action@v15.18.0
+        with:
+          args: deploy --only hosting:beta-ulik-no
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          PROJECT_ID: eidjord
+
+      - run: echo "Published to https://beta.ulik.no" >> $GITHUB_STEP_SUMMARY
+
+      - name: Publish to ulik.no
+        uses: w9jds/firebase-action@v15.18.0
+        with:
+          args: deploy --only hosting:ulik-no
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          PROJECT_ID: eidjord
+
+      - run: echo "Published to https://ulik.no" >> $GITHUB_STEP_SUMMARY

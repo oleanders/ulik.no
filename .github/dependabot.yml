@@ -1,0 +1,26 @@
+version: 2
+updates:
+
+  - package-ecosystem: bun
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels:
+      - "auto-merge"
+      - "npm"
+    assignees:
+      - "oleanders"
+    groups:
+      all-npm-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels:
+      - "auto-merge"
+      - "github-actions"
+    assignees:
+      - "oleanders"

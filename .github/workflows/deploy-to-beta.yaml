@@ -1,0 +1,45 @@
+name: Deploy to beta on push to master
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Lag nytt versjonsnummer
+        uses: wendbv/calver-tag-action@v2.0.0
+        id: tag-version
+        with:
+          prerelease: beta
+          prefix: 'v'
+
+      - run: echo "Version ${{ steps.tag-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build ulik.no
+        run: |
+          bun run check
+          bun run test -- --run
+          bun run build
+
+      - name: Publish to beta.ulik.no
+        if: github.actor != 'dependabot[bot]'
+        uses: w9jds/firebase-action@v15.18.0
+        with:
+          args: deploy --only hosting:beta-ulik-no
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          PROJECT_ID: eidjord
+
+      - run: echo "Published to https://beta.ulik.no" >> $GITHUB_STEP_SUMMARY
