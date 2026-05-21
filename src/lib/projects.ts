@@ -41,4 +41,12 @@ export const projects: Project[] = [
 		href: '/projects/diff-tool',
 		status: 'active',
 	},
+	{
+		id: 'skjermdeling-lab',
+		title: 'skjerm≠deling',
+		description: 'Test skjermdeling direkte i nettleseren med getDisplayMedia.',
+		tags: ['webrtc', 'media', 'eksperiment'],
+		href: '/projects/skjermdeling-lab',
+		status: 'active',
+	},
 ];
