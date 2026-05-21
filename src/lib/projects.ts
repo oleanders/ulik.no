@@ -2,6 +2,14 @@ import type { Project } from './types';
 
 export const projects: Project[] = [
 	{
+		id: 'robot-tohjul',
+		title: 'robot≠tohjul',
+		description: 'En to-hjuls robot som kjører rundt i en liten 3D-verden med tastaturstyring.',
+		tags: ['threlte', '3d', 'robot'],
+		href: '/projects/robot-tohjul',
+		status: 'active',
+	},
+	{
 		id: 'fall-haug',
 		title: 'fall≠ned',
 		description: 'Se alle elementer falle ned og lande i en haug på bunnen.',

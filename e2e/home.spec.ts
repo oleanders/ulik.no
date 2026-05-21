@@ -4,7 +4,7 @@ test('homepage shows terminal hero and projects', async ({ page }) => {
 	await page.goto('/');
 
 	await expect(page.getByRole('heading', { name: 'ulik.no' })).toBeVisible();
-	await expect(page.getByText('ulik alt anna.')).toBeVisible();
+	await expect(page.getByText('ulik alt annet.')).toBeVisible();
 	await expect(page.getByText('prompt≠lab')).toBeVisible();
 	await expect(page.getByText('tekst≠diff')).toBeVisible();
 });
