@@ -99,6 +99,18 @@ const totalCorrectLetters = $derived(
 const overallPercent = $derived(
 	totalLettersAttempted === 0 ? 0 : Math.round((totalCorrectLetters / totalLettersAttempted) * 100),
 );
+const minWordOptions = $derived(
+	Array.from(
+		{ length: maxWordsPerRound - minWordsAllowed + 1 },
+		(_, index) => minWordsAllowed + index,
+	),
+);
+const maxWordOptions = $derived(
+	Array.from(
+		{ length: maxWordsAllowed - minWordsPerRound + 1 },
+		(_, index) => minWordsPerRound + index,
+	),
+);
 
 const randomEntries = (count: number): NatoEntry[] =>
 	Array.from(
@@ -261,7 +273,7 @@ onMount(() => {
 		<span class="status active">aktiv</span>
 	</div>
 	<p class="description">
-		Øv deg på det fonetiske alfabetet ved å høre ord (for eksempel <code>alfa</code> og <code>beta</code>) og skriv riktige bokstaver.
+		Øv deg på det fonetiske alfabetet ved å høre ord (for eksempel <code>alfa</code> og <code>bravo</code>) og skriv riktige bokstaver.
 	</p>
 </section>
 
@@ -274,27 +286,19 @@ onMount(() => {
 			<div class="settings-grid">
 				<label for="min-words">
 					Min
-					<input
-						id="min-words"
-						type="number"
-						min={minWordsAllowed}
-						max={maxWordsAllowed}
-						step="1"
-						bind:value={minWordsPerRound}
-						onblur={sanitizeWordSettings}
-					/>
+					<select id="min-words" bind:value={minWordsPerRound}>
+						{#each minWordOptions as option}
+							<option value={option}>{option}</option>
+						{/each}
+					</select>
 				</label>
 				<label for="max-words">
 					Maks
-					<input
-						id="max-words"
-						type="number"
-						min={minWordsAllowed}
-						max={maxWordsAllowed}
-						step="1"
-						bind:value={maxWordsPerRound}
-						onblur={sanitizeWordSettings}
-					/>
+					<select id="max-words" bind:value={maxWordsPerRound}>
+						{#each maxWordOptions as option}
+							<option value={option}>{option}</option>
+						{/each}
+					</select>
 				</label>
 			</div>
 			<p class="settings-hint">Velg mellom {minWordsAllowed} og {maxWordsAllowed}. Standard er 3–5.</p>
