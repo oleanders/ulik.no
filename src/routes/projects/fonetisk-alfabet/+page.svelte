@@ -6,6 +6,16 @@ type NatoEntry = {
 	word: string;
 };
 
+type RoundHistoryLetter = {
+	letter: string;
+	correct: boolean;
+};
+
+type RoundHistoryEntry = {
+	roundNumber: number;
+	letters: RoundHistoryLetter[];
+};
+
 const alphabet: NatoEntry[] = [
 	{ letter: 'A', word: 'Alfa' },
 	{ letter: 'B', word: 'Bravo' },
@@ -35,32 +45,86 @@ const alphabet: NatoEntry[] = [
 	{ letter: 'Z', word: 'Zulu' },
 ];
 
-const wordsPerRound = 3;
+const minWordsAllowed = 1;
+const maxWordsAllowed = 10;
+const defaultMinWordsPerRound = 3;
+const defaultMaxWordsPerRound = 5;
+const speechLanguageOptions = [
+	{ value: 'nb-NO', label: 'Norsk bokmål (nb-NO)' },
+	{ value: 'nn-NO', label: 'Norsk nynorsk (nn-NO)' },
+	{ value: 'en-US', label: 'Engelsk (USA) (en-US)' },
+	{ value: 'en-GB', label: 'Engelsk (Storbritannia) (en-GB)' },
+] as const;
 
 let round = $state<NatoEntry[]>([]);
 let answer = $state('');
 let feedback = $state('');
-let points = $state(0);
-let attempts = $state(0);
 let roundNumber = $state(0);
 let roundAnswered = $state(false);
 let gameStarted = $state(false);
+let submittedAnswer = $state('');
 let revealWords = $state(false);
 let speaking = $state(false);
 let speechSupported = $state(false);
 let voices = $state<SpeechSynthesisVoice[]>([]);
+let speechLanguage = $state<(typeof speechLanguageOptions)[number]['value']>('nb-NO');
+let minWordsPerRound = $state(defaultMinWordsPerRound);
+let maxWordsPerRound = $state(defaultMaxWordsPerRound);
+let roundHistory = $state<RoundHistoryEntry[]>([]);
 let nextRoundButton = $state<HTMLButtonElement | null>(null);
 let answerInput = $state<HTMLInputElement | null>(null);
 
 const roundWords = $derived(round.map((entry) => entry.word).join(' '));
 const expectedAnswer = $derived(round.map((entry) => entry.letter).join(''));
-const scorePercent = $derived(attempts === 0 ? 0 : Math.round((points / attempts) * 100));
+const answerBreakdown = $derived(
+	round.map((entry, index) => {
+		const userLetter = submittedAnswer[index] ?? '∅';
+		return {
+			word: entry.word,
+			expected: entry.letter,
+			user: userLetter,
+			correct: userLetter === entry.letter,
+		};
+	}),
+);
+const totalLettersAttempted = $derived(
+	roundHistory.reduce((sum, historyEntry) => sum + historyEntry.letters.length, 0),
+);
+const totalCorrectLetters = $derived(
+	roundHistory.reduce(
+		(sum, historyEntry) => sum + historyEntry.letters.filter((letter) => letter.correct).length,
+		0,
+	),
+);
+const overallPercent = $derived(
+	totalLettersAttempted === 0 ? 0 : Math.round((totalCorrectLetters / totalLettersAttempted) * 100),
+);
 
 const randomEntries = (count: number): NatoEntry[] =>
 	Array.from(
 		{ length: count },
 		() => alphabet[Math.floor(Math.random() * alphabet.length)] ?? alphabet[0],
 	);
+
+const clampWordCount = (value: number, fallback: number): number => {
+	const safeValue = Number.isFinite(value) ? Math.round(value) : fallback;
+	return Math.min(maxWordsAllowed, Math.max(minWordsAllowed, safeValue));
+};
+
+const sanitizeWordSettings = () => {
+	const normalizedMin = clampWordCount(minWordsPerRound, defaultMinWordsPerRound);
+	const normalizedMax = clampWordCount(maxWordsPerRound, defaultMaxWordsPerRound);
+	minWordsPerRound = Math.min(normalizedMin, normalizedMax);
+	maxWordsPerRound = Math.max(normalizedMin, normalizedMax);
+};
+
+const getWordsPerRound = () => {
+	sanitizeWordSettings();
+	return minWordsPerRound + Math.floor(Math.random() * (maxWordsPerRound - minWordsPerRound + 1));
+};
+
+const countCorrectLetters = (letters: RoundHistoryLetter[]) =>
+	letters.reduce((sum, letter) => sum + Number(letter.correct), 0);
 
 const stopSpeaking = () => {
 	if (!speechSupported) return;
@@ -76,9 +140,12 @@ const speakRound = () => {
 	const utterance = new SpeechSynthesisUtterance(roundWords);
 	utterance.rate = 0.85;
 	utterance.pitch = 1;
-	utterance.lang = 'nb-NO';
+	utterance.lang = speechLanguage;
 
+	const selectedLanguagePrefix = speechLanguage.split('-')[0]?.toLowerCase() ?? '';
 	const matchingVoice =
+		voices.find((voice) => voice.lang.toLowerCase() === speechLanguage.toLowerCase()) ??
+		voices.find((voice) => voice.lang.toLowerCase().startsWith(`${selectedLanguagePrefix}-`)) ??
 		voices.find((voice) => voice.lang.toLowerCase().startsWith('nb')) ??
 		voices.find((voice) => voice.lang.toLowerCase().startsWith('no')) ??
 		voices.find((voice) => voice.lang.toLowerCase().startsWith('en')) ??
@@ -103,8 +170,9 @@ const speakRound = () => {
 const startRound = (options: { autoSpeak?: boolean } = {}) => {
 	stopSpeaking();
 	roundNumber += 1;
-	round = randomEntries(wordsPerRound);
+	round = randomEntries(getWordsPerRound());
 	answer = '';
+	submittedAnswer = '';
 	feedback = '';
 	revealWords = false;
 	roundAnswered = false;
@@ -117,6 +185,8 @@ const startRound = (options: { autoSpeak?: boolean } = {}) => {
 };
 
 const startGame = () => {
+	sanitizeWordSettings();
+	roundHistory = [];
 	gameStarted = true;
 	startRound({ autoSpeak: true });
 };
@@ -125,17 +195,26 @@ const submitAnswer = () => {
 	if (round.length === 0 || roundAnswered) return;
 
 	const normalized = answer.toUpperCase().replace(/[^A-Z]/g, '');
-	attempts += 1;
+	const currentRoundLetters = round.map((entry, index) => {
+		const userLetter = normalized[index] ?? '∅';
+		return {
+			letter: userLetter,
+			correct: userLetter === entry.letter,
+		};
+	});
+
+	submittedAnswer = normalized;
+	roundHistory = [{ roundNumber, letters: currentRoundLetters }, ...roundHistory];
 	roundAnswered = true;
 	revealWords = true;
 
-	if (normalized === expectedAnswer) {
-		points += 1;
+	const correctLetters = countCorrectLetters(currentRoundLetters);
+	if (correctLetters === round.length) {
 		feedback = `Riktig! ${roundWords} = ${expectedAnswer}.`;
 		return;
 	}
 
-	feedback = `Nesten. Riktig svar er ${expectedAnswer} (${roundWords}).`;
+	feedback = `${correctLetters}/${round.length} riktige. Riktig svar er ${expectedAnswer} (${roundWords}).`;
 };
 
 $effect(() => {
@@ -182,7 +261,7 @@ onMount(() => {
 		<span class="status active">aktiv</span>
 	</div>
 	<p class="description">
-		Hør ord i det fonetiske alfabetet (for eksempel <code>Alfa Bravo</code>) og skriv bokstavene.
+		Øv deg på det fonetiske alfabetet ved å høre ord (for eksempel <code>alfa</code> og <code>beta</code>) og skriv riktige bokstaver.
 	</p>
 </section>
 
@@ -190,55 +269,131 @@ onMount(() => {
 	{#if !gameStarted}
 		<p class="prompt">$ play --start</p>
 		<p class="description">Trykk start for å begynne. Ordene leses opp automatisk i hver runde.</p>
+		<div class="round-settings">
+			<p class="settings-title">Antall ord per oppgave</p>
+			<div class="settings-grid">
+				<label for="min-words">
+					Min
+					<input
+						id="min-words"
+						type="number"
+						min={minWordsAllowed}
+						max={maxWordsAllowed}
+						step="1"
+						bind:value={minWordsPerRound}
+						onblur={sanitizeWordSettings}
+					/>
+				</label>
+				<label for="max-words">
+					Maks
+					<input
+						id="max-words"
+						type="number"
+						min={minWordsAllowed}
+						max={maxWordsAllowed}
+						step="1"
+						bind:value={maxWordsPerRound}
+						onblur={sanitizeWordSettings}
+					/>
+				</label>
+			</div>
+			<p class="settings-hint">Velg mellom {minWordsAllowed} og {maxWordsAllowed}. Standard er 3–5.</p>
+		</div>
 		<div class="actions">
 			<button type="button" onclick={startGame}>Start spill</button>
 		</div>
 	{:else}
-		<p class="prompt">$ play --round {roundNumber}</p>
+		<div class="game-layout">
+			<div class="game-main">
+				<p class="prompt">$ play --round {roundNumber}</p>
 
-		<div class="actions">
-			<button type="button" onclick={speakRound} disabled={!speechSupported || speaking}>
-				{speaking ? 'Spiller av…' : 'Spill av ord igjen'}
-			</button>
-			<button
-				bind:this={nextRoundButton}
-				type="button"
-				class="ghost"
-				class:ready={roundAnswered}
-				onclick={() => startRound({ autoSpeak: true })}
-				disabled={!roundAnswered}>Neste runde</button
-			>
-			<button type="button" class="ghost" onclick={() => (revealWords = !revealWords)}>
-				{revealWords ? 'Skjul ord' : 'Vis ord'}
-			</button>
+				<div class="voice-settings">
+					<label for="speech-language">Språk for opplesning</label>
+					<select id="speech-language" bind:value={speechLanguage} disabled={!speechSupported || speaking}>
+						{#each speechLanguageOptions as option}
+							<option value={option.value}>{option.label}</option>
+						{/each}
+					</select>
+				</div>
+
+				<div class="actions">
+					<button type="button" onclick={speakRound} disabled={!speechSupported || speaking}>
+						{speaking ? 'Spiller av…' : 'Spill av ord igjen'}
+					</button>
+					<button
+						bind:this={nextRoundButton}
+						type="button"
+						class="ghost"
+						class:ready={roundAnswered}
+						onclick={() => startRound({ autoSpeak: true })}
+						disabled={!roundAnswered}>Neste runde</button
+					>
+					<button type="button" class="ghost" onclick={() => (revealWords = !revealWords)}>
+						{revealWords ? 'Skjul ord' : 'Vis ord'}
+					</button>
+				</div>
+
+				{#if revealWords}
+					<p class="round-words" aria-label="Ord i runden">
+						{#each answerBreakdown as item}
+							<span class={`round-word ${roundAnswered ? (item.correct ? 'correct' : 'wrong') : ''}`}>
+								{item.word}
+							</span>
+						{/each}
+					</p>
+				{/if}
+
+				<form
+					class="answer-form"
+					onsubmit={(event) => {
+						event.preventDefault();
+						submitAnswer();
+					}}
+				>
+					<label for="answer">Hvilke bokstaver hørte du?</label>
+					<input
+						bind:this={answerInput}
+						id="answer"
+						type="text"
+						bind:value={answer}
+						placeholder="f.eks. AB"
+						autocomplete="off"
+						spellcheck="false"
+						disabled={roundAnswered}
+					/>
+					<button type="submit" disabled={roundAnswered}>Sjekk svar</button>
+				</form>
+			</div>
+
+			<aside class="history-panel" aria-label="Rundehistorikk">
+				<h2>Runder</h2>
+				<p class="history-summary">
+					Oppsummering: {totalCorrectLetters}/{totalLettersAttempted} riktige bokstaver ({overallPercent}%)
+				</p>
+				{#if roundHistory.length === 0}
+					<p class="history-empty">Ingen runder enda.</p>
+				{:else}
+					<div class="history-list">
+						{#each roundHistory as historyEntry}
+							<div class="history-item">
+								<p class="history-round">
+									Runde {historyEntry.roundNumber} — {countCorrectLetters(historyEntry.letters)}/{
+										historyEntry.letters.length
+									}
+								</p>
+								<div class="history-letters">
+									{#each historyEntry.letters as historyLetter}
+										<span class={`submitted-letter ${historyLetter.correct ? 'correct' : 'wrong'}`}>
+											{historyLetter.letter}
+										</span>
+									{/each}
+								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</aside>
 		</div>
-
-		{#if revealWords}
-			<p class="round-words">{roundWords}</p>
-		{/if}
-
-		<form
-			class="answer-form"
-			onsubmit={(event) => {
-				event.preventDefault();
-				submitAnswer();
-			}}
-		>
-			<label for="answer">Hvilke bokstaver hørte du?</label>
-			<input
-				bind:this={answerInput}
-				id="answer"
-				type="text"
-				bind:value={answer}
-				placeholder="f.eks. AB"
-				autocomplete="off"
-				spellcheck="false"
-				disabled={roundAnswered}
-			/>
-			<button type="submit" disabled={roundAnswered}>Sjekk svar</button>
-		</form>
-
-		<p class="score">Poeng: {points}/{attempts} ({scorePercent}%)</p>
 	{/if}
 
 	{#if feedback}
@@ -291,6 +446,67 @@ onMount(() => {
 		flex-wrap: wrap;
 	}
 
+	.game-layout {
+		display: grid;
+		gap: 1rem;
+		grid-template-columns: minmax(0, 1fr) minmax(14rem, 18rem);
+		align-items: start;
+	}
+
+	.game-main {
+		display: grid;
+		gap: 0.85rem;
+	}
+
+	.history-panel {
+		display: grid;
+		gap: 0.6rem;
+		padding: 0.7rem;
+		border: 1px solid var(--color-border);
+		border-radius: 0.45rem;
+		background: var(--color-surface-alt);
+	}
+
+	.history-panel h2 {
+		margin: 0;
+		font-size: 1rem;
+		color: var(--color-text-soft);
+	}
+
+	.history-empty {
+		color: var(--color-text-soft);
+		font-size: 0.9rem;
+	}
+
+	.history-summary {
+		color: var(--color-primary);
+		font-size: 0.9rem;
+	}
+
+	.history-list {
+		display: grid;
+		gap: 0.55rem;
+	}
+
+	.history-item {
+		display: grid;
+		gap: 0.35rem;
+		padding: 0.5rem;
+		border: 1px solid var(--color-border);
+		border-radius: 0.4rem;
+	}
+
+	.history-round {
+		color: var(--color-text-soft);
+		font-size: 0.85rem;
+	}
+
+	.history-letters {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+	}
+
 	button {
 		border: 1px solid var(--color-primary);
 		background: color-mix(in oklab, var(--color-primary) 15%, transparent);
@@ -330,20 +546,66 @@ onMount(() => {
 		font-size: 0.95rem;
 	}
 
+	.voice-settings {
+		display: grid;
+		gap: 0.45rem;
+		max-width: 24rem;
+	}
+
+	.voice-settings label {
+		color: var(--color-text-soft);
+		font-size: 0.95rem;
+	}
+
+	.round-settings {
+		display: grid;
+		gap: 0.45rem;
+		max-width: 24rem;
+	}
+
+	.settings-title {
+		color: var(--color-text-soft);
+		font-size: 0.95rem;
+	}
+
+	.settings-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.6rem;
+	}
+
+	.settings-grid label {
+		display: grid;
+		gap: 0.3rem;
+		color: var(--color-text-soft);
+		font-size: 0.9rem;
+	}
+
+	.settings-hint {
+		color: var(--color-text-soft);
+		font-size: 0.85rem;
+	}
+
+	select,
 	input {
 		border: 1px solid var(--color-border-strong);
 		background: var(--color-surface-alt);
 		color: var(--color-text);
 		padding: 0.5rem 0.65rem;
 		border-radius: 0.45rem;
+		font: inherit;
 	}
 
+	select:focus-visible,
 	input:focus-visible {
 		outline: none;
 		border-color: var(--color-secondary);
 	}
 
 	.round-words {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
 		padding: 0.55rem 0.7rem;
 		border: 1px dashed var(--color-border-strong);
 		border-radius: 0.45rem;
@@ -351,11 +613,48 @@ onMount(() => {
 		background: color-mix(in oklab, var(--color-secondary) 8%, transparent);
 	}
 
-	.score {
+	.round-word {
+		padding: 0.15rem 0.35rem;
+		border-radius: 0.35rem;
+	}
+
+	.round-word.correct {
 		color: var(--color-primary);
+		background: color-mix(in oklab, var(--color-primary) 14%, transparent);
+	}
+
+	.round-word.wrong {
+		color: #ff8a80;
+		background: color-mix(in oklab, #ff8a80 14%, transparent);
+	}
+
+	.submitted-letter {
+		padding: 0.15rem 0.4rem;
+		border: 1px solid var(--color-border);
+		border-radius: 0.35rem;
+		min-width: 1.75rem;
+		text-align: center;
+	}
+
+	.submitted-letter.correct {
+		color: var(--color-primary);
+		border-color: color-mix(in oklab, var(--color-primary) 55%, var(--color-border));
+		background: color-mix(in oklab, var(--color-primary) 14%, transparent);
+	}
+
+	.submitted-letter.wrong {
+		color: #ff8a80;
+		border-color: color-mix(in oklab, #ff8a80 65%, var(--color-border));
+		background: color-mix(in oklab, #ff8a80 14%, transparent);
 	}
 
 	.feedback {
 		color: var(--color-text-soft);
+	}
+
+	@media (max-width: 900px) {
+		.game-layout {
+			grid-template-columns: minmax(0, 1fr);
+		}
 	}
 </style>

@@ -28,7 +28,7 @@ export const projects: Project[] = [
 	{
 		id: 'fonetisk-alfabet',
 		title: 'fonetisk≠spill',
-		description: 'Hør ord i fonetisk alfabet og skriv riktige bokstaver.',
+		description: 'Øv deg på det fonetiske alfabetet ved å høre ord og skriv riktige bokstaver.',
 		tags: ['språk', 'spill', 'speech'],
 		href: '/projects/fonetisk-alfabet',
 		status: 'active',
