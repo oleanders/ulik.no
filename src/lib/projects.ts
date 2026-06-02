@@ -26,6 +26,14 @@ export const projects: Project[] = [
 		status: 'active',
 	},
 	{
+		id: 'fonetisk-alfabet',
+		title: 'fonetisk≠spill',
+		description: 'Hør ord i fonetisk alfabet og skriv riktige bokstaver.',
+		tags: ['språk', 'spill', 'speech'],
+		href: '/projects/fonetisk-alfabet',
+		status: 'active',
+	},
+	{
 		id: 'prompt-lab',
 		title: 'prompt≠lab',
 		description: 'Eksperimenter med AI-prompts og se hva som skjer.',
