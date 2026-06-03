@@ -20,16 +20,16 @@
 		"@playwright/test": "^1.60.0",
 		"@sveltejs/adapter-auto": "^7.0.1",
 		"@sveltejs/adapter-static": "^3.0.10",
-		"@sveltejs/kit": "^2.61.1",
+		"@sveltejs/kit": "^2.62.0",
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@types/diff": "^8.0.0",
 		"@types/node": "^25.9.1",
-		"@vitest/coverage-v8": "^4.1.7",
-		"svelte": "^5.56.0",
-		"svelte-check": "^4.4.6",
+		"@vitest/coverage-v8": "^4.1.8",
+		"svelte": "^5.56.1",
+		"svelte-check": "^4.5.0",
 		"typescript": "^6.0.2",
-		"vite": "^8.0.14",
-		"vitest": "^4.1.7"
+		"vite": "^8.0.16",
+		"vitest": "^4.1.8"
 	},
 	"dependencies": {
 		"@threlte/core": "^8.5.16",
