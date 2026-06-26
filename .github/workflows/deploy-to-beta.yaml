@@ -43,7 +43,7 @@ jobs:
 
       - name: Publish to beta.ulik.no
         if: github.actor != 'dependabot[bot]'
-        uses: w9jds/firebase-action@v15.21.0
+        uses: w9jds/firebase-action@v15.22.3
         with:
           args: deploy --only hosting:beta-ulik-no
         env:
