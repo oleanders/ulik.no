@@ -31,7 +31,7 @@ jobs:
 
       - name: Draft release med Release Drafter
         id: rd
-        uses: release-drafter/release-drafter@v7
+        uses: release-drafter/release-drafter@v7.6.0
         with:
           version: ${{ steps.tag-version.outputs.version }}
           tag: ${{ steps.tag-version.outputs.version }}
