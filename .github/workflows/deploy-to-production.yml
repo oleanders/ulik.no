@@ -28,7 +28,7 @@ jobs:
       - run: echo "Version ${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
 
       - name: Publish to beta.ulik.no
-        uses: w9jds/firebase-action@v15.21.0
+        uses: w9jds/firebase-action@v15.25.1
         with:
           args: deploy --only hosting:beta-ulik-no
         env:
@@ -38,7 +38,7 @@ jobs:
       - run: echo "Published to https://beta.ulik.no" >> $GITHUB_STEP_SUMMARY
 
       - name: Publish to ulik.no
-        uses: w9jds/firebase-action@v15.21.0
+        uses: w9jds/firebase-action@v15.25.1
         with:
           args: deploy --only hosting:ulik-no
         env:
