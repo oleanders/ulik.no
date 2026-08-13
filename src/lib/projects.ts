@@ -57,4 +57,12 @@ export const projects: Project[] = [
 		href: '/projects/skjermdeling-lab',
 		status: 'active',
 	},
+	{
+		id: 'morsekode',
+		title: 'morse≠kode',
+		description: 'Øv deg på å sende og motta morsekode med lyd, lys og tommelen.',
+		tags: ['spill', 'morse', 'lyd'],
+		href: '/projects/morsekode',
+		status: 'active',
+	},
 ];
