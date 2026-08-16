@@ -1,7 +1,7 @@
 <script lang="ts">
-type Mode = 'motta' | 'sende';
+type Subpage = 'oversikt' | 'motta' | 'sende';
 type Round = {
-	mode: Mode;
+	subpage: Subpage;
 	target: string;
 	user: string;
 	correct: boolean;
@@ -56,7 +56,8 @@ const WPM_MAX = 30;
 const DOT_THRESHOLD_MS = 250;
 const MIN_KEY_MS = 40;
 
-let mode = $state<Mode>('motta');
+let { subpage }: { subpage: Subpage } = $props();
+
 let wpm = $state(15);
 let target = $state('');
 let receiveAnswer = $state('');
@@ -67,6 +68,7 @@ let roundHistory = $state<Round[]>([]);
 let audioContext = $state<AudioContext | null>(null);
 let isPlaying = $state(false);
 let lightOn = $state(false);
+let playingLetter = $state('');
 let keyPressedAt = $state<number | null>(null);
 let showCode = $state(false);
 let roundsStarted = $state(false);
@@ -95,6 +97,12 @@ const formattedBuffer = $derived(
 		.map((char) => (char === '.' ? '·' : '—'))
 		.join(''),
 );
+
+const formatMorseCode = (code: string) =>
+	code
+		.split('')
+		.map((char) => (char === '.' ? '·' : '—'))
+		.join('');
 
 const pickTarget = () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)] ?? 'A';
 
@@ -144,6 +152,23 @@ const playMorse = async (code: string) => {
 	isPlaying = false;
 };
 
+const playLetter = async (letter: string) => {
+	if (isPlaying) return;
+	playingLetter = letter;
+	await playMorse(MORSE[letter] ?? '');
+	playingLetter = '';
+};
+
+const handleOverviewKey = (event: KeyboardEvent) => {
+	if (subpage !== 'oversikt' || isPlaying) return;
+
+	const key = event.key.length === 1 ? event.key.toUpperCase() : event.key;
+	if (MORSE[key]) {
+		event.preventDefault();
+		playLetter(key);
+	}
+};
+
 const startRound = async () => {
 	target = pickTarget();
 	receiveAnswer = '';
@@ -152,25 +177,15 @@ const startRound = async () => {
 	answered = false;
 	roundsStarted = true;
 
-	if (mode === 'motta') {
+	if (subpage === 'motta') {
 		await playMorse(currentMorse);
 	}
-};
-
-const switchMode = (next: Mode) => {
-	mode = next;
-	roundsStarted = false;
-	answered = false;
-	feedback = '';
-	target = '';
-	sendBuffer = '';
-	receiveAnswer = '';
 };
 
 const submitReceive = () => {
 	const normalized = receiveAnswer.toUpperCase().trim();
 	const correct = normalized === target;
-	roundHistory = [{ mode, target, user: normalized || '∅', correct }, ...roundHistory];
+	roundHistory = [{ subpage, target, user: normalized || '∅', correct }, ...roundHistory];
 	streak = correct ? streak + 1 : 0;
 	answered = true;
 	feedback = correct
@@ -181,7 +196,7 @@ const submitReceive = () => {
 const submitSend = () => {
 	const decoded = decodedSend;
 	const correct = decoded === target;
-	roundHistory = [{ mode, target, user: decoded ?? sendBuffer, correct }, ...roundHistory];
+	roundHistory = [{ subpage, target, user: decoded ?? sendBuffer, correct }, ...roundHistory];
 	streak = correct ? streak + 1 : 0;
 	answered = true;
 
@@ -250,8 +265,10 @@ const handleKeyUp = (event: KeyboardEvent) => {
 	<title>morse≠kode — ≠ ulik.no</title>
 </svelte:head>
 
+<svelte:window onkeydown={handleOverviewKey} />
+
 <section class="terminal-panel head">
-	<p class="prompt">$ ./morse --mode {mode}</p>
+	<p class="prompt">$ ./morse --subpage {subpage}</p>
 	<div class="head-row">
 		<h1>morse≠kode</h1>
 		<span class="status active">aktiv</span>
@@ -260,13 +277,16 @@ const handleKeyUp = (event: KeyboardEvent) => {
 		Øv deg på å sende og motta morsekode. Trykk start, lytt, se lyset og bruk mellomromstasten som
 		nøkkel.
 	</p>
-	<div class="mode-group" role="group" aria-label="Øvingsmodus">
-		<button type="button" class:active={mode === 'motta'} onclick={() => switchMode('motta')}>
+	<div class="subpage-group" role="group" aria-label="Velg modus">
+		<a class:active={subpage === 'oversikt'} aria-current={subpage === 'oversikt' ? 'page' : undefined} href="/projects/morsekode/oversikt">
+			oversikt
+		</a>
+		<a class:active={subpage === 'motta'} aria-current={subpage === 'motta' ? 'page' : undefined} href="/projects/morsekode/motta">
 			motta
-		</button>
-		<button type="button" class:active={mode === 'sende'} onclick={() => switchMode('sende')}>
+		</a>
+		<a class:active={subpage === 'sende'} aria-current={subpage === 'sende' ? 'page' : undefined} href="/projects/morsekode/sende">
 			sende
-		</button>
+		</a>
 	</div>
 </section>
 
@@ -277,16 +297,43 @@ const handleKeyUp = (event: KeyboardEvent) => {
 		<span class="wpm-value">{wpm} WPM</span>
 	</div>
 
-	{#if !roundsStarted}
+	{#if subpage === 'oversikt'}
+		<p class="hint">Trykk på en bokstav, eller trykk samme bokstav på tastaturet, for å høre og se koden.</p>
+		<div class="letter-grid">
+			{#each ALPHABET as letter}
+				<button
+					type="button"
+					class="letter-tile {playingLetter === letter ? 'playing' : ''}"
+					onclick={() => playLetter(letter)}
+					disabled={isPlaying}
+					aria-label="{letter}: {formatMorseCode(MORSE[letter] ?? '')}"
+				>
+					<span class="letter-tile-char">{letter}</span>
+					<span class="letter-tile-morse">{formatMorseCode(MORSE[letter] ?? '')}</span>
+				</button>
+			{/each}
+		</div>
+		<div class="signal-preview">
+			<button
+				type="button"
+				class="signal-light {lightOn ? 'active' : ''}"
+				disabled
+				aria-label="Forhåndsvisning av blink"
+			>
+				<span class="light-core"></span>
+				<span class="light-glow"></span>
+			</button>
+		</div>
+	{:else if !roundsStarted}
 		<div class="start-area">
 			<p class="hint">Trykk start for å få en bokstav eller et tall.</p>
 			<button type="button" class="primary" onclick={() => startRound()}>Start øving</button>
 		</div>
 	{:else}
 		<div class="target-area">
-			<span class="target-label">{mode === 'motta' ? 'Hva hører du?' : 'Send denne koden'}</span>
+			<span class="target-label">{subpage === 'motta' ? 'Hva hører du?' : 'Send denne koden'}</span>
 			<div class="target-card">
-				{#if mode === 'sende'}
+				{#if subpage === 'sende'}
 					<span class="target-letter" aria-label="Målbokstav">{target}</span>
 					<button type="button" class="small" onclick={() => (showCode = !showCode)}>
 						{showCode ? 'skjul kode' : 'vis kode'}
@@ -327,7 +374,7 @@ const handleKeyUp = (event: KeyboardEvent) => {
 			<div class="form-actions">
 				<button type="button" class="primary" onclick={() => startRound()}>Neste runde</button>
 			</div>
-		{:else if mode === 'motta'}
+		{:else if subpage === 'motta'}
 			<form
 				class="answer-form"
 				class:answered
@@ -415,7 +462,7 @@ const handleKeyUp = (event: KeyboardEvent) => {
 		<ul class="history-list">
 			{#each roundHistory as round}
 				<li class="history-item {round.correct ? 'correct' : 'wrong'}">
-					<span class="history-mode">{round.mode}</span>
+					<span class="history-subpage">{round.subpage}</span>
 					<span class="history-target">{round.target}</span>
 					<span class="history-answer">{round.user}</span>
 					<span class="history-result">{round.correct ? '✓' : '✕'}</span>
@@ -457,7 +504,7 @@ const handleKeyUp = (event: KeyboardEvent) => {
 		color: var(--color-text-soft);
 	}
 
-	.mode-group {
+	.subpage-group {
 		display: inline-flex;
 		gap: 0;
 		border: 1px solid var(--color-border-strong);
@@ -466,7 +513,7 @@ const handleKeyUp = (event: KeyboardEvent) => {
 		width: fit-content;
 	}
 
-	.mode-group button {
+	.subpage-group a {
 		border: none;
 		border-radius: 0;
 		background: transparent;
@@ -476,7 +523,7 @@ const handleKeyUp = (event: KeyboardEvent) => {
 		cursor: pointer;
 	}
 
-	.mode-group button.active {
+	.subpage-group a.active {
 		background: var(--color-surface);
 		color: var(--color-primary);
 	}
@@ -796,7 +843,7 @@ const handleKeyUp = (event: KeyboardEvent) => {
 		background: color-mix(in oklab, #ff8a80 10%, transparent);
 	}
 
-	.history-mode {
+	.history-subpage {
 		color: var(--color-text-soft);
 		font-size: 0.85rem;
 	}
@@ -812,5 +859,62 @@ const handleKeyUp = (event: KeyboardEvent) => {
 
 	.history-item.wrong .history-result {
 		color: #ff8a80;
+	}
+
+	.letter-grid {
+		display: grid;
+		gap: 0.6rem;
+		grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+	}
+
+	.letter-tile {
+		display: grid;
+		place-items: center;
+		gap: 0.25rem;
+		padding: 0.6rem;
+		border: 1px solid var(--color-border-strong);
+		border-radius: 0.5rem;
+		background: var(--color-surface-alt);
+		color: var(--color-text);
+		font: inherit;
+		cursor: pointer;
+		min-height: 5rem;
+	}
+
+	.letter-tile:hover,
+	.letter-tile:focus-visible {
+		border-color: var(--color-secondary);
+		color: var(--color-secondary);
+	}
+
+	.letter-tile:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.letter-tile.playing {
+		border-color: var(--color-primary);
+		color: var(--color-primary);
+		background: color-mix(in oklab, var(--color-primary) 18%, transparent);
+		box-shadow: 0 0 24px color-mix(in oklab, var(--color-primary) 40%, transparent);
+		opacity: 1;
+	}
+
+	.letter-tile-char {
+		font-size: 1.4rem;
+		font-weight: 700;
+	}
+
+	.letter-tile-morse {
+		font-size: 0.75rem;
+		color: var(--color-primary);
+		letter-spacing: 0.12em;
+		white-space: nowrap;
+	}
+
+	.signal-preview {
+		display: grid;
+		place-items: center;
+		padding: 1rem;
 	}
 </style>
