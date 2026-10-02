@@ -1,0 +1,23 @@
+name: Flyt field browser checks
+
+on:
+  pull_request:
+    paths:
+      - 'src/routes/projects/flyt-felt/**'
+      - 'e2e/flyt-felt.spec.ts'
+      - '.github/workflows/flyt-felt-checks.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - name: Verify flow field controls, sharing, export and mobile behavior
+        run: bunx playwright test e2e/flyt-felt.spec.ts
