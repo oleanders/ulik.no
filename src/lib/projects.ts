@@ -2,6 +2,17 @@ import type { Project, ProjectCategory } from './types';
 
 export const projects: Project[] = [
 	{
+		id: 'lik-lik',
+		category: 'kunst',
+		hook: 'Ser ulikt ut. Er helt likt.',
+		interaction: 'Se · dra · avslør',
+		title: 'lik≠lik',
+		description: 'Tre optiske illusjoner du kan undersøke ved å fjerne omgivelsene.',
+		tags: ['illusjon', 'persepsjon', 'interaksjon'],
+		href: '/projects/lik-lik',
+		status: 'active',
+	},
+	{
 		id: 'robot-tohjul',
 		category: 'lek',
 		hook: 'To hjul. Din kontroll.',
