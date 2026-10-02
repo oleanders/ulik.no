@@ -25,11 +25,12 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Check, test and build the PR merge result without deployment secrets
         env:
-          APP_VERSION: pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           bun run check
           bun run test -- --run
-          bun run build
+          APP_VERSION="pr-${PR_NUMBER}-${PR_HEAD_SHA:0:7}" bun run build
       - uses: actions/upload-artifact@v7
         with:
           name: firebase-preview-${{ github.run_id }}
