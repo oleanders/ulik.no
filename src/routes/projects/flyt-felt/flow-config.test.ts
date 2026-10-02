@@ -33,36 +33,25 @@ describe('flow configuration', () => {
 		expect(result).toMatchObject({ speed: 0.3, density: 800, attraction: 0.3, hue: 12 });
 	});
 
-	it.each([
-		'NaN',
-		'Infinity',
-		'-Infinity',
-		'1e9',
-		'<script>',
-		' ',
-		'',
-		'1.12345',
-	])('rejects malformed numeric input %s', (value) => {
-		const params = new URLSearchParams({
-			speed: value,
-			density: value,
-			attraction: value,
-			hue: value,
-		});
-		expect(parseConfig(params.toString())).toEqual(DEFAULT_CONFIG);
-	});
+	it.each(['NaN', 'Infinity', '-Infinity', '1e9', '<script>', ' ', '', '1.12345'])(
+		'rejects malformed numeric input %s',
+		(value) => {
+			const params = new URLSearchParams({
+				speed: value,
+				density: value,
+				attraction: value,
+				hue: value,
+			});
+			expect(parseConfig(params.toString())).toEqual(DEFAULT_CONFIG);
+		},
+	);
 
-	it.each([
-		'0',
-		'-1',
-		'4294967296',
-		'1.5',
-		'Infinity',
-		'1e2',
-		'',
-	])('rejects invalid seed %s', (seed) => {
-		expect(parseConfig(`?seed=${seed}`).seed).toBe(DEFAULT_CONFIG.seed);
-	});
+	it.each(['0', '-1', '4294967296', '1.5', 'Infinity', '1e2', ''])(
+		'rejects invalid seed %s',
+		(seed) => {
+			expect(parseConfig(`?seed=${seed}`).seed).toBe(DEFAULT_CONFIG.seed);
+		},
+	);
 
 	it('ignores unknown fields and does not propagate them into shared URLs', () => {
 		const config = parseConfig(

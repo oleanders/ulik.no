@@ -11,6 +11,7 @@ test('presets, keyboard controls, repeated resets and local PNG export', async (
 	await expect(page.getByText('Redusert bevegelse er valgt.', { exact: false })).toBeVisible();
 	const canvas = page.locator('canvas');
 	const original = await canvas.evaluate((element) => element.toDataURL());
+	await page.screenshot({ path: 'test-results/flyt-felt-desktop.png', fullPage: true });
 	for (let i = 0; i < 3; i++) {
 		await page.getByRole('button', { name: 'start på nytt', exact: true }).click();
 		expect(await canvas.evaluate((element) => element.toDataURL())).toBe(original);
