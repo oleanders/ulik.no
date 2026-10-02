@@ -70,14 +70,24 @@ test('shared URLs restore only bounded configuration and survive navigation', as
 	await expect(page.getByLabel('Tiltrekning')).toHaveValue('0.7');
 	await expect(page.getByLabel('Fargetone')).toHaveValue('40');
 	await expect(page.getByTestId('flow-seed')).toHaveText('88');
+	const composition = await page.locator('canvas').evaluate((element) => element.toDataURL());
 	await page.getByRole('link', { name: '~/om', exact: true }).click();
-	await page.goBack();
-	await expect(page.getByLabel('Fart')).toHaveValue('1.25');
-	await page.goForward();
 	await expect(page).toHaveURL(/\/om$/);
-	await page.goBack();
-	await expect(page.getByTestId('flow-seed')).toHaveText('88');
-	await expect(page.getByRole('button', { name: 'spill av', exact: true })).toBeVisible();
+	await expect(page.locator('canvas')).toHaveCount(0);
+	for (let i = 0; i < 3; i++) {
+		await page.goBack();
+		await expect(page).toHaveURL(shareUrl);
+		await expect(page.getByRole('button', { name: 'spill av', exact: true })).toBeEnabled();
+		await expect(page.getByLabel('Fart')).toHaveValue('1.25');
+		await expect(page.getByLabel('Tetthet')).toHaveValue('1000');
+		await expect(page.getByTestId('flow-seed')).toHaveText('88');
+		expect(await page.locator('canvas').evaluate((element) => element.toDataURL())).toBe(
+			composition,
+		);
+		await page.goForward();
+		await expect(page).toHaveURL(/\/om$/);
+		await expect(page.locator('canvas')).toHaveCount(0);
+	}
 
 	await page.goto(
 		'/projects/flyt-felt?v=1&preset=invalid&seed=-9&speed=Infinity&density=999999&attraction=-999&hue=NaN',
@@ -100,7 +110,9 @@ test('clipboard failure leaves a selectable link and repeated sharing is safe', 
 	await expect(page.getByRole('button', { name: 'del univers' })).toBeEnabled();
 	for (let i = 0; i < 3; i++) {
 		await page.getByRole('button', { name: 'del univers' }).click();
-		await expect(page.getByRole('status')).toHaveText('Kopier lenken fra feltet under.');
+		await expect(page.getByRole('status', { name: 'Melding fra flytfelt' })).toHaveText(
+			'Kopier lenken fra feltet under.',
+		);
 		await expect(page.getByLabel('Lenke til universet')).toHaveValue(/preset=nordlys/);
 	}
 });

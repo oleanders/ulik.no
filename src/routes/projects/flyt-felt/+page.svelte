@@ -315,7 +315,7 @@ function savePng(): void {
 </section>
 
 <div class="sharing">
-	<p class="feedback" role="status">{message}</p>
+	<p class="feedback" role="status" aria-label="Melding fra flytfelt">{message}</p>
 	{#if shareUrl}
 		<label for="flow-share">Lenke til universet</label>
 		<input id="flow-share" type="url" readonly value={shareUrl} onclick={(event) => event.currentTarget.select()} />
