@@ -6,8 +6,7 @@ on:
 
 permissions: {}
 
-# Serialize deployments to one stable channel. A newer run must not cancel an
-# in-flight Firebase upload and allow an older upload to finish after it.
+# Let each Firebase deploy finish before the next update to this PR.
 concurrency:
   group: firebase-preview-${{ github.event.pull_request.number }}
   cancel-in-progress: false
@@ -49,8 +48,7 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      # This fresh runner never checks out or executes PR code. Only static
-      # build files are transferred; the Firebase configuration is fixed below.
+      # Deploy static files on a fresh runner; never execute PR code with secrets.
       - uses: actions/download-artifact@v8
         with:
           name: firebase-preview-${{ github.run_id }}
@@ -118,7 +116,7 @@ jobs:
               return;
             }
             const url = new URL(process.env.PREVIEW_URL);
-            if (url.protocol !== 'https:' || url.username || url.password ||
+            if (url.protocol !== 'https:' ||
                 !url.hostname.startsWith(`beta-ulik-no--pr-${number}-`) ||
                 !url.hostname.endsWith('.web.app')) {
               throw new Error('Unexpected Firebase preview URL; refusing to publish it.');
@@ -128,13 +126,9 @@ jobs:
             if (!Number.isFinite(expires.getTime())) throw new Error('Missing preview expiry.');
             const body = [
               marker,
-              '### Forhåndsvisningen er klar',
+              `[Test PR #${number}](${url.href})`,
               '',
-              `[Åpne PR #${number} i nettleseren](${url.href})`,
-              '',
-              `Commit: \`${sha.slice(0, 7)}\` · Kanal: \`pr-${number}\` · Utløper: ${expires.toUTCString()}`,
-              '',
-              'Lenken oppdateres etter hvert vellykkede bygg. Den er offentlig for alle med lenken.',
+              `Commit: \`${sha.slice(0, 7)}\` · Utløper: ${expires.toUTCString()}`,
             ].join('\n');
             const comments = await github.paginate(github.rest.issues.listComments, {
               ...context.repo, issue_number: number, per_page: 100,
