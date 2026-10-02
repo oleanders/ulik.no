@@ -40,3 +40,26 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+
+## Pull request previews
+
+`Firebase PR preview` builds every opened, updated or reopened PR. For same-repository
+PRs, it publishes the static build to channel `pr-<number>` on the existing
+`beta-ulik-no` Hosting site in project `eidjord`, using the existing `GCP_SA_KEY`
+secret. It never deploys to a live channel. One bot comment is updated with the
+public test URL, commit and expiry after a successful deployment. Channels expire
+7 days after their last deployment, including after a PR is closed.
+
+The build job receives no Firebase secrets. A fresh deployment runner downloads
+only the static build and uses a fixed, beta-only configuration; it does not
+execute PR code or read the PR's Firebase configuration. Fork and Dependabot PRs
+are built but skip deployment and commenting. No extra credentials are created.
+
+This workflow can preview its own PR. To enable it for the other open PRs, merge
+this workflow first, then update those branches from `main` (or reopen the PRs
+once their merge result contains the workflow). A PR build/deploy failure leaves
+the previous successful preview and its commit-labelled comment in place.
+
+References: [Firebase previews](https://firebase.google.com/docs/hosting/github-integration),
+[Hosting deploy action](https://github.com/FirebaseExtended/action-hosting-deploy),
+[GitHub PR events and fork restrictions](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).

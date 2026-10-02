@@ -1,0 +1,166 @@
+name: Firebase PR preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions: {}
+
+# Serialize deployments to one stable channel. A newer run must not cancel an
+# in-flight Firebase upload and allow an older upload to finish after it.
+concurrency:
+  group: firebase-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Check, test and build the PR merge result without deployment secrets
+        env:
+          APP_VERSION: pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+        run: |
+          bun run check
+          bun run test -- --run
+          bun run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: firebase-preview-${{ github.run_id }}
+          path: build/
+          if-no-files-found: error
+          retention-days: 1
+
+  preview:
+    needs: build
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: write
+    steps:
+      # This fresh runner never checks out or executes PR code. Only static
+      # build files are transferred; the Firebase configuration is fixed below.
+      - uses: actions/download-artifact@v8
+        with:
+          name: firebase-preview-${{ github.run_id }}
+          path: preview/build
+      - name: Prepare a configuration limited to the beta Hosting site
+        run: |
+          test -f preview/build/index.html
+          if [ -n "$(find preview/build -type l -print -quit)" ]; then
+            echo 'Unexpected symlink in static build.' >&2
+            exit 1
+          fi
+          cat > preview/firebase.json <<'JSON'
+          {
+            "hosting": {
+              "site": "beta-ulik-no",
+              "public": "build",
+              "ignore": ["**/.*", "**/node_modules/**"],
+              "cleanUrls": true,
+              "trailingSlash": false,
+              "rewrites": [{ "source": "**", "destination": "/index.html" }]
+            }
+          }
+          JSON
+      - name: Skip closed or superseded revisions
+        id: current
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: context.issue.number,
+            });
+            const current = pr.state === 'open' &&
+              pr.head.repo?.full_name === `${context.repo.owner}/${context.repo.repo}` &&
+              pr.head.sha === context.payload.pull_request.head.sha;
+            core.setOutput('deploy', current ? 'true' : 'false');
+            if (!current) core.notice('Preview skipped: PR closed or a newer commit exists.');
+      - name: Deploy the PR preview channel only
+        id: deploy
+        if: steps.current.outputs.deploy == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.GCP_SA_KEY }}
+          projectId: eidjord
+          entryPoint: preview
+          channelId: pr-${{ github.event.pull_request.number }}
+          expires: 7d
+          firebaseToolsVersion: 15.32.0
+          disableComment: true
+      - name: Update one PR comment after a successful current deployment
+        if: steps.deploy.outcome == 'success'
+        uses: actions/github-script@v9
+        env:
+          PREVIEW_URL: ${{ steps.deploy.outputs.details_url }}
+          PREVIEW_EXPIRES: ${{ steps.deploy.outputs.expire_time }}
+        with:
+          script: |
+            const number = context.issue.number;
+            const sha = context.payload.pull_request.head.sha;
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo, pull_number: number,
+            });
+            if (pr.state !== 'open' || pr.head.sha !== sha) {
+              core.notice('Preview comment skipped: PR closed or a newer commit exists.');
+              return;
+            }
+            const url = new URL(process.env.PREVIEW_URL);
+            if (url.protocol !== 'https:' || url.username || url.password ||
+                !url.hostname.startsWith(`beta-ulik-no--pr-${number}-`) ||
+                !url.hostname.endsWith('.web.app')) {
+              throw new Error('Unexpected Firebase preview URL; refusing to publish it.');
+            }
+            const marker = '<!-- ulik-firebase-pr-preview -->';
+            const expires = new Date(process.env.PREVIEW_EXPIRES);
+            if (!Number.isFinite(expires.getTime())) throw new Error('Missing preview expiry.');
+            const body = [
+              marker,
+              '### Forhåndsvisningen er klar',
+              '',
+              `[Åpne PR #${number} i nettleseren](${url.href})`,
+              '',
+              `Commit: \`${sha.slice(0, 7)}\` · Kanal: \`pr-${number}\` · Utløper: ${expires.toUTCString()}`,
+              '',
+              'Lenken oppdateres etter hvert vellykkede bygg. Den er offentlig for alle med lenken.',
+            ].join('\n');
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...context.repo, issue_number: number, per_page: 100,
+            });
+            const previous = comments.find((comment) =>
+              comment.user?.login === 'github-actions[bot]' && comment.body?.startsWith(marker));
+            if (previous) {
+              await github.rest.issues.updateComment({
+                ...context.repo, comment_id: previous.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo, issue_number: number, body,
+              });
+            }
+            await core.summary.addLink('Åpne forhåndsvisning', url.href).write();
+
+  restricted-preview:
+    if: >-
+      github.event.pull_request.head.repo.full_name != github.repository ||
+      github.actor == 'dependabot[bot]' ||
+      github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Explain why no preview is deployed
+        run: |
+          echo 'Preview deployment is skipped for forks and Dependabot PRs because deployment secrets are not available to these runs.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The ordinary build still runs. A reviewed change can be tested from a maintainer-owned branch in this repository.' >> "$GITHUB_STEP_SUMMARY"
