@@ -99,15 +99,18 @@ test('mobile touch, reduced motion and onward navigation remain usable', async (
 
 test('catalog includes the new visual project and links without JavaScript', async ({
 	browser,
-}) => {
+}, testInfo) => {
 	const context = await browser.newContext({ javaScriptEnabled: false });
 	const page = await context.newPage();
 	await page.goto('/projects');
 	await page.getByRole('link', { name: /lik≠lik/ }).click();
 	await expect(page.getByRole('heading', { name: 'lik≠lik', exact: true })).toBeVisible();
 	await expect(page.getByTestId('color-target')).toHaveCount(2);
-	await expect(
-		page.getByText('Slå på JavaScript for å bruke kontrollene.', { exact: false }),
-	).toBeVisible();
+	await page.screenshot({ path: testInfo.outputPath('lik-lik-no-javascript.png'), fullPage: true });
+	// Playwright text selectors intentionally skip noscript content.
+	await expect(page.locator('noscript')).toBeVisible();
+	expect(await page.locator('noscript').textContent()).toContain(
+		'Slå på JavaScript for å bruke kontrollene.',
+	);
 	await context.close();
 });
