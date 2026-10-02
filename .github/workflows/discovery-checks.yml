@@ -1,0 +1,32 @@
+name: Discovery browser checks
+
+on:
+  pull_request:
+    paths:
+      - 'src/lib/components/**'
+      - 'src/lib/projects*'
+      - 'src/lib/types.ts'
+      - 'src/routes/+page.svelte'
+      - 'src/routes/projects/+page.svelte'
+      - 'src/routes/projects/+layout.svelte'
+      - 'e2e/home.spec.ts'
+      - '.github/workflows/discovery-checks.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  discovery:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - run: bunx playwright test e2e/home.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: discovery-browser-results
+          path: test-results/
+          retention-days: 7
