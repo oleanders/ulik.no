@@ -1,0 +1,102 @@
+name: Firebase PR preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions: {}
+
+# Let each Firebase deploy finish before the next update to this PR.
+concurrency:
+  group: firebase-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Check, test and build the PR merge result without deployment secrets
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          bun run check
+          bun run test -- --run
+          APP_VERSION="pr-${PR_NUMBER}-${PR_HEAD_SHA:0:7}" bun run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: firebase-preview-${{ github.run_id }}
+          path: build/
+          if-no-files-found: error
+          retention-days: 1
+
+  preview:
+    needs: build
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pull-requests: write
+      checks: write
+    steps:
+      # Deploy static files on a fresh runner; never execute PR code with secrets.
+      - uses: actions/download-artifact@v8
+        with:
+          name: firebase-preview-${{ github.run_id }}
+          path: preview/build
+      - name: Prepare a configuration limited to the beta Hosting site
+        run: |
+          test -f preview/build/index.html
+          if [ -n "$(find preview/build -type l -print -quit)" ]; then
+            echo 'Unexpected symlink in static build.' >&2
+            exit 1
+          fi
+          cat > preview/firebase.json <<'JSON'
+          {
+            "hosting": {
+              "site": "beta-ulik-no",
+              "public": "build",
+              "ignore": ["**/.*", "**/node_modules/**"],
+              "cleanUrls": true,
+              "trailingSlash": false,
+              "rewrites": [{ "source": "**", "destination": "/index.html" }]
+            }
+          }
+          JSON
+      - name: Skip closed or superseded revisions
+        id: current
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: context.issue.number,
+            });
+            const current = pr.state === 'open' &&
+              pr.head.repo?.full_name === `${context.repo.owner}/${context.repo.repo}` &&
+              pr.head.sha === context.payload.pull_request.head.sha;
+            core.setOutput('deploy', current ? 'true' : 'false');
+            if (!current) core.notice('Preview skipped: PR closed or a newer commit exists.');
+      - name: Deploy the PR preview channel only
+        id: deploy
+        if: steps.current.outputs.deploy == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.GCP_SA_KEY }}
+          projectId: eidjord
+          entryPoint: preview
+          channelId: pr-${{ github.event.pull_request.number }}
+          expires: 7d
+          firebaseToolsVersion: 15.32.0
