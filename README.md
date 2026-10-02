@@ -46,14 +46,16 @@ You can preview the production build with `npm run preview`.
 `Firebase PR preview` builds every opened, updated or reopened PR. For same-repository
 PRs, it publishes the static build to channel `pr-<number>` on the existing
 `beta-ulik-no` Hosting site in project `eidjord`, using the existing `GCP_SA_KEY`
-secret. It never deploys to a live channel. One bot comment is updated with the
+secret. It never deploys to a live channel. The Firebase action maintains its standard PR comment with the
 public test URL, commit and expiry after a successful deployment. Channels expire
 7 days after their last deployment, including after a PR is closed.
 
 The build job receives no Firebase secrets. A fresh deployment runner downloads
 only the static build and uses a fixed, beta-only configuration; it does not
 execute PR code or read the PR's Firebase configuration. Fork and Dependabot PRs
-are built but skip deployment and commenting. No extra credentials are created.
+are built but skip deployment and commenting. No extra credentials are created. A current-head check skips outdated builds; if a
+new commit arrives during deployment, the comment labels the deployed commit and
+the next serialized run refreshes it.
 
 This workflow can preview its own PR. To enable it for the other open PRs, merge
 this workflow first, then update those branches from `main` (or reopen the PRs
