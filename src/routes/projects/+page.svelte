@@ -1,8 +1,14 @@
 <script lang="ts">
+import { onMount } from 'svelte';
 import ProjectCard from '$lib/components/ProjectCard.svelte';
 import SurpriseLink from '$lib/components/SurpriseLink.svelte';
 import { categoryLabels, projects } from '$lib/projects';
 import type { ProjectCategory } from '$lib/types';
+
+let ready = $state(false);
+onMount(() => {
+	ready = true;
+});
 
 let category = $state<ProjectCategory | 'alle'>('alle');
 const categories: (ProjectCategory | 'alle')[] = ['alle', 'lek', 'kunst', 'verktoy'];
@@ -24,7 +30,7 @@ const filtered = $derived(
 
 <div class="filters" role="group" aria-label="Filtrer prosjekter">
 	{#each categories as choice}
-		<button type="button" aria-pressed={category === choice} onclick={() => { category = choice; }}>{choice === 'alle' ? 'Alle' : categoryLabels[choice]}</button>
+		<button type="button" disabled={!ready} aria-pressed={category === choice} onclick={() => { category = choice; }}>{choice === 'alle' ? 'Alle' : categoryLabels[choice]}</button>
 	{/each}
 </div>
 <p class="count" role="status">Viser {filtered.length} av {projects.length} prosjekter</p>

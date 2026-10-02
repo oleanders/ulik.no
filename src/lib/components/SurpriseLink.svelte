@@ -1,11 +1,17 @@
 <script lang="ts">
+import { onMount } from 'svelte';
 import { goto } from '$app/navigation';
 import { pickSurprise } from '$lib/projects';
+
+let ready = $state(false);
+onMount(() => {
+	ready = true;
+});
 
 let { excludeId }: { excludeId?: string } = $props();
 </script>
 
-<button type="button" onclick={() => goto(pickSurprise(excludeId).href)}>Overrask meg <span aria-hidden="true">↗</span></button>
+<button type="button" disabled={!ready} onclick={() => goto(pickSurprise(excludeId).href)}>Overrask meg <span aria-hidden="true">↗</span></button>
 
 <style>
 	button {
@@ -27,6 +33,11 @@ let { excludeId }: { excludeId?: string } = $props();
 	button:focus-visible {
 		outline: 2px solid var(--color-secondary);
 		outline-offset: 3px;
+	}
+
+	button:disabled {
+		opacity: 0.5;
+		cursor: default;
 	}
 
 	span {
