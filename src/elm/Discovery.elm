@@ -140,7 +140,7 @@ viewHome model =
                 , p [ class "tagline" ] [ text "ulik alt annet." ]
                 , p [ class "description" ] [ text "Små eksperimenter. Rare ideer.", br [] [], text "Ting du kan prøve, ikke bare lese om." ]
                 , div [ class "actions" ] [ a [ class "primary", href "/projects/flyt-felt" ] [ text "Lek med flyt≠felt ", span [ attribute "aria-hidden" "true" ] [ text "→" ] ], surprise Nothing ]
-                , a [ class "catalog", href "/projects" ] [ text "Se alle 9 prosjekter ↓" ]
+                , a [ class "catalog", href "/projects" ] [ text ("Se alle " ++ String.fromInt (List.length Projects.all) ++ " prosjekter ↓") ]
                 ]
             , div [ class "home-preview" ]
                 [ div [ class "preview" ]
@@ -184,7 +184,7 @@ viewHome model =
             ]
         , section [ class "discovery", attribute "aria-labelledby" "discovery-title" ]
             [ div [ class "section-head" ] [ div [] [ p [ class "prompt" ] [ text "$ ls ./muligheter" ], h2 [ id "discovery-title" ] [ text "Hvor vil du begynne?" ] ], a [ href "/projects" ] [ text "Hele katalogen →" ] ]
-            , div [ class "project-grid" ] (List.map (Projects.byId >> card) [ Projects.Falling, Projects.Morse, Projects.Diff ])
+            , div [ class "project-grid" ] (List.map (Projects.byId >> card) [ Projects.Marble, Projects.Morse, Projects.Diff ])
             , p [ class "note" ] [ text "Ingen konto. Bare nysgjerrighet." ]
             ]
         ]
@@ -224,7 +224,7 @@ viewCatalog model =
                 )
                 [ All, Category Play, Category Art, Category Tools ]
             )
-        , p [ class "count", attribute "role" "status" ] [ text ("Viser " ++ String.fromInt (List.length visible) ++ " av 9 prosjekter") ]
+        , p [ class "count", attribute "role" "status" ] [ text ("Viser " ++ String.fromInt (List.length visible) ++ " av " ++ String.fromInt (List.length Projects.all) ++ " prosjekter") ]
         , section [ class "project-grid", attribute "aria-label" "Prosjekter" ] (List.map card visible)
         ]
 
