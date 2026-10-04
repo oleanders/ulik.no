@@ -13,6 +13,19 @@ import * as tools from './browser/tools.js';
 history.scrollRestoration = 'manual';
 const scrollPositions = new Map();
 let currentEntry;
+function rememberScroll() {
+	if (currentEntry) scrollPositions.set(currentEntry, [window.scrollX, window.scrollY]);
+}
+// Capture before Elm replaces a tall page with a shorter one and the browser clamps scroll.
+document.addEventListener('click', rememberScroll, true);
+window.addEventListener('popstate', rememberScroll);
+window.addEventListener(
+	'scroll',
+	() => {
+		if (history.state?.ulikScrollKey === currentEntry) rememberScroll();
+	},
+	{ passive: true },
+);
 function historyEntry() {
 	const key = history.state?.ulikScrollKey || crypto.randomUUID();
 	history.replaceState({ ...history.state, ulikScrollKey: key }, '', location.href);
@@ -29,7 +42,6 @@ let routeRevision = 0;
 app.ports.send.subscribe((command) => {
 	if (command.domain === 'navigation') {
 		const revision = ++routeRevision;
-		if (currentEntry) scrollPositions.set(currentEntry, [window.scrollX, window.scrollY]);
 		currentEntry = historyEntry();
 		const position = command.scrollToTop ? [0, 0] : scrollPositions.get(currentEntry) || [0, 0];
 		for (const adapter of Object.values(adapters)) adapter.dispose();
