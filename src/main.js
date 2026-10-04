@@ -9,6 +9,16 @@ import * as flow from './browser/flow.js';
 import * as preview from './browser/preview.js';
 import * as tools from './browser/tools.js';
 
+// Restore after Elm renders, rather than while the previous page still determines layout.
+history.scrollRestoration = 'manual';
+const scrollPositions = new Map();
+let currentEntry;
+function historyEntry() {
+	const key = history.state?.ulikScrollKey || crypto.randomUUID();
+	history.replaceState({ ...history.state, ulikScrollKey: key }, '', location.href);
+	return key;
+}
+
 // Elm must create its own anchors to install Browser.application navigation handlers.
 // The prerendered body remains available until this synchronous startup.
 document.body.replaceChildren();
@@ -19,12 +29,17 @@ let routeRevision = 0;
 app.ports.send.subscribe((command) => {
 	if (command.domain === 'navigation') {
 		const revision = ++routeRevision;
+		if (currentEntry) scrollPositions.set(currentEntry, [window.scrollX, window.scrollY]);
+		currentEntry = historyEntry();
+		const position = command.scrollToTop ? [0, 0] : scrollPositions.get(currentEntry) || [0, 0];
 		for (const adapter of Object.values(adapters)) adapter.dispose();
 		robot?.dispose();
 		requestAnimationFrame(() => {
 			if (revision !== routeRevision) return;
 			app.ports.receive.send({ domain: 'navigation', url: command.url });
-			if (command.scrollToTop) window.scrollTo(0, 0);
+			requestAnimationFrame(() => {
+				if (revision === routeRevision) window.scrollTo(...position);
+			});
 		});
 		return;
 	}
