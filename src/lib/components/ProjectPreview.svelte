@@ -3,7 +3,12 @@ let { id }: { id: string } = $props();
 </script>
 
 <svg viewBox="0 0 360 160" aria-hidden="true" focusable="false">
-	{#if id === 'flyt-felt'}
+	{#if id === 'lik-lik'}
+		<rect x="24" y="24" width="156" height="112" fill="#101612" stroke="none" />
+		<rect x="180" y="24" width="156" height="112" fill="#e2e8e4" stroke="none" />
+		<rect x="80" y="59" width="42" height="42" fill="#82978b" stroke="none" />
+		<rect x="236" y="59" width="42" height="42" fill="#82978b" stroke="none" />
+	{:else if id === 'flyt-felt'}
 		{#each Array.from({ length: 16 }, (_, i) => i) as line}
 			<path class="flow" style={`opacity: ${0.35 + line * 0.035}`} d={`M -10 ${line * 12} C 100 ${160 - line * 9}, 200 ${line * 10 - 40}, 380 ${line * 10 + 30}`} />
 		{/each}
