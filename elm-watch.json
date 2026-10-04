@@ -1,0 +1,8 @@
+{
+	"targets": {
+		"ulik": {
+			"inputs": ["src/elm/Main.elm"],
+			"output": "static/elm.js"
+		}
+	}
+}
