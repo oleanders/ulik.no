@@ -89,6 +89,9 @@ async function requestSharing(includeAudio, onStarted, onStopped, onFailed) {
 				// Muting the property also prevents feedback in browsers where a muted
 				// attribute alone only sets the video's defaultMuted property.
 				preview.muted = true;
+				// Lustre's autoplay attribute hook calls play() on an empty video at
+				// mount and drops its promise. Set this only when capture is ready.
+				preview.autoplay = true;
 				preview.srcObject = stream;
 				preview.play()?.catch(() => {});
 			}

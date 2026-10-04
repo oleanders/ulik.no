@@ -1,4 +1,3 @@
-import gleam/bool
 import gleam/dynamic/decode
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -254,9 +253,10 @@ fn direction_button(
       attribute("aria-label", description),
       attribute(
         "aria-pressed",
-        bool.to_string(
-          model.touch_key == Some(key) || list.contains(model.keys, key),
-        ),
+        case model.touch_key == Some(key) || list.contains(model.keys, key) {
+          True -> "true"
+          False -> "false"
+        },
       ),
       event.on("pointerdown", decode.success(TouchDown(key)))
         |> event.prevent_default,

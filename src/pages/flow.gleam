@@ -1,4 +1,3 @@
-import gleam/bool
 import gleam/dynamic/decode
 import gleam/float
 import gleam/int
@@ -736,7 +735,10 @@ fn preset_button(selected: Preset, preset: Preset) -> Element(Message) {
     [
       a.type_("button"),
       a.class("preset"),
-      a.attribute("aria-pressed", bool.to_string(selected == preset)),
+      a.attribute("aria-pressed", case selected == preset {
+        True -> "true"
+        False -> "false"
+      }),
       event.on_click(SelectPreset(preset)),
     ],
     [

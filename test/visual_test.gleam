@@ -282,3 +282,35 @@ pub fn illusion_all_scenes_render_with_descriptions_test() {
     })
   })
 }
+
+pub fn visual_aria_pressed_uses_html_boolean_spelling_test() {
+  let flow_html = flow.init() |> flow.view |> element.to_string
+  string.contains(flow_html, "aria-pressed=\"true\"") |> should.be_true
+  string.contains(flow_html, "aria-pressed=\"false\"") |> should.be_true
+  string.contains(flow_html, "aria-pressed=\"True\"") |> should.be_false
+  let robot_html =
+    robot.init()
+    |> robot_step(robot.TouchDown("w"))
+    |> robot.view
+    |> element.to_string
+  string.contains(robot_html, "aria-pressed=\"true\"") |> should.be_true
+  string.contains(robot_html, "aria-pressed=\"false\"") |> should.be_true
+  string.contains(robot_html, "aria-pressed=\"True\"") |> should.be_false
+}
+
+pub fn illusion_opacity_preserves_compact_svg_number_spelling_test() {
+  let initial = illusions.init() |> illusions.view |> element.to_string
+  string.contains(initial, "opacity=\"1\"") |> should.be_true
+  let revealed =
+    illusions.init()
+    |> illusion_step(illusions.ToggleReveal)
+    |> illusions.view
+    |> element.to_string
+  string.contains(revealed, "opacity=\"0\"") |> should.be_true
+  let softened =
+    illusions.init()
+    |> illusion_step(illusions.SetStrength("35"))
+    |> illusions.view
+    |> element.to_string
+  string.contains(softened, "opacity=\"0.35\"") |> should.be_true
+}

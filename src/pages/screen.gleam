@@ -202,7 +202,6 @@ pub fn view(model: Model) -> Element(Message) {
           html.video(
             [
               attribute.id("screen-preview"),
-              attribute.autoplay(True),
               attribute.playsinline(True),
               attribute.muted(True),
               attribute.controls(sharing),

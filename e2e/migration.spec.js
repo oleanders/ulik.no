@@ -183,8 +183,12 @@ async function captureResponsiveScreenshots(page, testInfo, name) {
 	const viewport = page.viewportSize();
 	await page.screenshot({ path: testInfo.outputPath(`${name}-desktop.png`), fullPage: true });
 	await page.setViewportSize({ width: 390, height: 844 });
-	expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 	await page.screenshot({ path: testInfo.outputPath(`${name}-mobile.png`), fullPage: true });
+	const width = await page.evaluate(() => ({
+		page: document.documentElement.scrollWidth,
+		viewport: innerWidth,
+	}));
+	expect(width.page, `${name} should fit mobile viewport`).toBeLessThanOrEqual(width.viewport);
 	await page.setViewportSize(viewport);
 }
 

@@ -102,6 +102,7 @@ describe('typed browser tools', () => {
 		frames.clear();
 		expect(preview.srcObject).toBe(stream);
 		expect(preview.muted).toBe(true);
+		expect(preview.autoplay).toBe(true);
 		expect(preview.play).toHaveBeenCalledOnce();
 		stopSharing();
 		expect(stream.track.stop).toHaveBeenCalledOnce();

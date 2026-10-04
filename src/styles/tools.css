@@ -175,6 +175,7 @@
 .screen-page .head,
 .screen-page .controls {
 	display: grid;
+	grid-template-columns: minmax(0, 1fr);
 	gap: 0.85rem;
 }
 
@@ -195,6 +196,7 @@
 }
 
 .screen-page .description {
+	overflow-wrap: anywhere;
 	max-width: 68ch;
 	color: var(--color-text-soft);
 }
@@ -266,11 +268,13 @@
 }
 
 .screen-page .source {
+	overflow-wrap: anywhere;
 	color: var(--color-secondary);
 	font-size: 0.9rem;
 }
 
 .screen-page .preview {
+	min-width: 0;
 	border: 1px dashed var(--color-border);
 	border-radius: 0.7rem;
 	padding: 0.5rem;

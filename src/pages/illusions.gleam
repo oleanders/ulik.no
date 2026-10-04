@@ -2,6 +2,7 @@ import gleam/float
 import gleam/int
 import gleam/list
 import gleam/result
+import gleam/string
 import lustre/attribute.{type Attribute, attribute}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
@@ -344,7 +345,7 @@ fn context_attributes(model: Model) -> List(Attribute(message)) {
   [
     attribute(
       "opacity",
-      float.to_string(context_opacity(model.strength, model.revealed)),
+      svg_number(context_opacity(model.strength, model.revealed)),
     ),
     attribute("data-testid", "context"),
   ]
@@ -393,9 +394,9 @@ fn circle_scene(model: Model) -> List(Element(Message)) {
       [attribute("fill", "#427167"), ..context_attributes(model)],
       list.map(circles, fn(circle) {
         svg.circle([
-          attribute("cx", float.to_string(circle.x)),
-          attribute("cy", float.to_string(circle.y)),
-          attribute("r", float.to_string(circle.radius)),
+          attribute("cx", svg_number(circle.x)),
+          attribute("cy", svg_number(circle.y)),
+          attribute("r", svg_number(circle.radius)),
         ])
       }),
     ),
@@ -474,4 +475,12 @@ fn scene_label(x: String, y: String, caption: String) -> Element(message) {
 
 fn measure(path: String) -> Element(message) {
   svg.path([attribute.class("measure"), attribute("d", path)])
+}
+
+// SVG numbers use the compact decimal spelling preserved by the original views.
+fn svg_number(number: Float) -> String {
+  case string.split(float.to_string(number), ".") {
+    [whole, "0"] -> whole
+    _ -> float.to_string(number)
+  }
 }
