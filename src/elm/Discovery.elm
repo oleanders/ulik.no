@@ -113,7 +113,32 @@ surprise excluded =
 card : Project -> Html msg
 card project =
     a [ class "project-card card", href (Projects.href project.id) ]
-        [ img [ src ("/previews/" ++ Projects.slug project.id ++ ".svg"), width 360, height 160, alt "", attribute "aria-hidden" "true" ] []
+        [ img
+            [ src
+                (if project.id == Projects.Marble then
+                    "/previews/kule-bane-start.webp"
+
+                 else
+                    "/previews/" ++ Projects.slug project.id ++ ".svg"
+                )
+            , width 360
+            , height 160
+            , attribute "aria-hidden"
+                (if project.id == Projects.Marble then
+                    "false"
+
+                 else
+                    "true"
+                )
+            , alt
+                (if project.id == Projects.Marble then
+                    "Glasskula ved starten av metallbanen"
+
+                 else
+                    ""
+                )
+            ]
+            []
         , div [ class "body" ]
             [ div [ class "meta" ]
                 [ span [] [ text (Projects.categoryLabel project.category) ]

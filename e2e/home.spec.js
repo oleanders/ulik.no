@@ -8,6 +8,9 @@ test('homepage invites discovery with an interactive preview and selected projec
 	await expect(page.getByText('ulik alt annet.')).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Lek med flyt≠felt' })).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'kule≠bane' })).toBeVisible();
+	const marbleImage = page.getByAltText('Glasskula ved starten av metallbanen');
+	await expect(marbleImage).toHaveAttribute('src', '/previews/kule-bane-start.webp');
+	await expect.poll(() => marbleImage.evaluate((image) => image.naturalWidth)).toBe(720);
 	await expect(page.getByRole('heading', { name: 'morse≠kode' })).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'tekst≠diff' })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Pause bevegelse' })).toBeEnabled();
