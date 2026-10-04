@@ -55,7 +55,7 @@ export function dispose() {
 function copyAppearance(source, clone) {
 	// Clones leave their original ancestors, so preserve inherited and scoped styles.
 	const computed = getComputedStyle(source);
-	for (const property of computed)
+	for (const property of Array.from(computed))
 		clone.style.setProperty(property, computed.getPropertyValue(property));
 	clone.removeAttribute('id');
 	for (let index = 0; index < source.children.length; index++)

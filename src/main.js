@@ -21,7 +21,7 @@ app.ports.send.subscribe((command) => {
 		requestAnimationFrame(() => {
 			if (revision !== routeRevision) return;
 			app.ports.receive.send({ domain: 'navigation', url: command.url });
-			window.scrollTo(0, 0);
+			if (command.scrollToTop) window.scrollTo(0, 0);
 		});
 		return;
 	}

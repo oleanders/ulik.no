@@ -57,6 +57,7 @@ type alias Model =
     , discovery : Discovery.Model
     , deploy : Deploy.Model
     , version : String
+    , scrollToTop : Bool
     }
 
 
@@ -122,18 +123,18 @@ init flags url key =
         ( deploy, deployCmd ) =
             Deploy.init
     in
-    ( { key = key, url = url, route = route, page = page, discovery = Discovery.init, deploy = deploy, version = flags.version }
+    ( { key = key, url = url, route = route, page = page, discovery = Discovery.init, deploy = deploy, version = flags.version, scrollToTop = False }
     , if flags.prerender then
         pageCmd
 
       else
-        Cmd.batch [ lifecycle url, Cmd.map DeployMsg deployCmd ]
+        Cmd.batch [ lifecycle url False, Cmd.map DeployMsg deployCmd ]
     )
 
 
-lifecycle : Url -> Cmd Msg
-lifecycle url =
-    Ports.send (Encode.object [ ( "domain", Encode.string "navigation" ), ( "action", Encode.string "route" ), ( "url", Encode.string (Url.toString url) ) ])
+lifecycle : Url -> Bool -> Cmd Msg
+lifecycle url scrollToTop =
+    Ports.send (Encode.object [ ( "domain", Encode.string "navigation" ), ( "action", Encode.string "route" ), ( "url", Encode.string (Url.toString url) ), ( "scrollToTop", Encode.bool scrollToTop ) ])
 
 
 initPage : Route -> Url -> ( Page, Cmd Msg )
@@ -185,7 +186,11 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case ( msg, model.page ) of
         ( LinkClicked (Browser.Internal url), _ ) ->
-            ( model, Nav.pushUrl model.key (Url.toString url) )
+            if url == model.url then
+                ( model, Cmd.none )
+
+            else
+                ( { model | scrollToTop = True }, Nav.pushUrl model.key (Url.toString url) )
 
         ( LinkClicked (Browser.External url), _ ) ->
             ( model, Nav.load url )
@@ -198,7 +203,7 @@ update msg model =
                 ( page, _ ) =
                     initPage route url
             in
-            ( { model | url = url, route = route, page = page }, lifecycle url )
+            ( { model | url = url, route = route, page = page, scrollToTop = False }, lifecycle url model.scrollToTop )
 
         ( Received value, _ ) ->
             case Decode.decodeValue (Decode.map2 Tuple.pair (Decode.field "domain" Decode.string) (Decode.field "url" Decode.string)) value of
@@ -221,7 +226,7 @@ update msg model =
                 ( discovery, cmd, destination ) =
                     Discovery.update childMsg model.discovery
             in
-            ( { model | discovery = discovery }, Cmd.batch [ Cmd.map DiscoveryMsg cmd, Maybe.map (Projects.href >> Nav.pushUrl model.key) destination |> Maybe.withDefault Cmd.none ] )
+            ( { model | discovery = discovery, scrollToTop = model.scrollToTop || destination /= Nothing }, Cmd.batch [ Cmd.map DiscoveryMsg cmd, Maybe.map (Projects.href >> Nav.pushUrl model.key) destination |> Maybe.withDefault Cmd.none ] )
 
         ( DeployMsg childMsg, _ ) ->
             let
