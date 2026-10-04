@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 160"><title>morsekode</title><style>
+	svg {
+		display: block;
+		width: 100%;
+		height: auto;
+		background: radial-gradient(ellipse at center, #0f241e, #0a100f 80%);
+		fill: none;
+		stroke: #00ff88;
+		stroke-width: 1.5;
+	}
+
+	text {
+		fill: #00ff88;
+		stroke: none;
+		font: 14px monospace;
+	}
+
+	.big {
+		font-size: 68px;
+	}
+
+	.word {
+		font-size: 26px;
+	}
+
+	.secondary, .flow:nth-child(even) {
+		stroke: #00ccff;
+	}
+
+	.secondary-text {
+		fill: #00ccff;
+	}
+
+	.grid {
+		stroke: #295744;
+	}
+
+	.solid {
+		fill: #00ff88;
+	}
+
+	.muted {
+		fill: #a7b2ad;
+	}
+
+	.screen {
+		fill: #0a1513;
+		stroke: #00ccff;
+	}
+
+	.morse {
+		stroke-width: 10;
+		stroke-linecap: round;
+	}
+
+	.removed {
+		stroke: #f5a3aa;
+		fill: #35191e;
+	}
+
+	.removed-text {
+		fill: #f5a3aa;
+	}
+
+	.added {
+		fill: #103526;
+	}
+</style><text class="muted" x="28" y="35">... / --- / ...</text><circle cx="40" cy="86" r="6" class="solid"/><circle cx="62" cy="86" r="6" class="solid"/><circle cx="84" cy="86" r="6" class="solid"/><circle cx="273" cy="86" r="6" class="solid"/><circle cx="295" cy="86" r="6" class="solid"/><circle cx="317" cy="86" r="6" class="solid"/><path class="morse" d="M112 86 h25"/><path class="morse" d="M163 86 h25"/><path class="morse" d="M214 86 h25"/><text x="156" y="132" class="secondary-text">SOS</text></svg>

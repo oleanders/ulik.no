@@ -2,7 +2,7 @@
 	"hosting": [
 		{
 			"site": "beta-ulik-no",
-			"public": "build",
+			"public": "dist",
 			"ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
 			"cleanUrls": true,
 			"trailingSlash": false,
@@ -15,7 +15,7 @@
 		},
 		{
 			"site": "ulik-no",
-			"public": "build",
+			"public": "dist",
 			"ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
 			"cleanUrls": true,
 			"trailingSlash": false,

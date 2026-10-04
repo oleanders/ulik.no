@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 160"><title>skjermdeling-lab</title><style>
+	svg {
+		display: block;
+		width: 100%;
+		height: auto;
+		background: radial-gradient(ellipse at center, #0f241e, #0a100f 80%);
+		fill: none;
+		stroke: #00ff88;
+		stroke-width: 1.5;
+	}
+
+	text {
+		fill: #00ff88;
+		stroke: none;
+		font: 14px monospace;
+	}
+
+	.big {
+		font-size: 68px;
+	}
+
+	.word {
+		font-size: 26px;
+	}
+
+	.secondary, .flow:nth-child(even) {
+		stroke: #00ccff;
+	}
+
+	.secondary-text {
+		fill: #00ccff;
+	}
+
+	.grid {
+		stroke: #295744;
+	}
+
+	.solid {
+		fill: #00ff88;
+	}
+
+	.muted {
+		fill: #a7b2ad;
+	}
+
+	.screen {
+		fill: #0a1513;
+		stroke: #00ccff;
+	}
+
+	.morse {
+		stroke-width: 10;
+		stroke-linecap: round;
+	}
+
+	.removed {
+		stroke: #f5a3aa;
+		fill: #35191e;
+	}
+
+	.removed-text {
+		fill: #f5a3aa;
+	}
+
+	.added {
+		fill: #103526;
+	}
+</style>
+		<rect x="42" y="23" width="195" height="108" rx="6" /><path d="M112 145 H168 M140 131 V145" />
+		<rect class="screen" x="154" y="64" width="163" height="78" rx="5" />
+		<path class="secondary" d="M188 100 H277 M265 89 L277 100 L265 111" />
+	</svg>

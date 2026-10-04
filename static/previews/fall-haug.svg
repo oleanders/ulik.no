@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 160"><title>fall-haug</title><style>
+	svg {
+		display: block;
+		width: 100%;
+		height: auto;
+		background: radial-gradient(ellipse at center, #0f241e, #0a100f 80%);
+		fill: none;
+		stroke: #00ff88;
+		stroke-width: 1.5;
+	}
+
+	text {
+		fill: #00ff88;
+		stroke: none;
+		font: 14px monospace;
+	}
+
+	.big {
+		font-size: 68px;
+	}
+
+	.word {
+		font-size: 26px;
+	}
+
+	.secondary, .flow:nth-child(even) {
+		stroke: #00ccff;
+	}
+
+	.secondary-text {
+		fill: #00ccff;
+	}
+
+	.grid {
+		stroke: #295744;
+	}
+
+	.solid {
+		fill: #00ff88;
+	}
+
+	.muted {
+		fill: #a7b2ad;
+	}
+
+	.screen {
+		fill: #0a1513;
+		stroke: #00ccff;
+	}
+
+	.morse {
+		stroke-width: 10;
+		stroke-linecap: round;
+	}
+
+	.removed {
+		stroke: #f5a3aa;
+		fill: #35191e;
+	}
+
+	.removed-text {
+		fill: #f5a3aa;
+	}
+
+	.added {
+		fill: #103526;
+	}
+</style>
+		<g transform="translate(35 92) rotate(-12)"><rect width="82" height="35" rx="4" /><text x="12" y="23">header</text></g>
+		<g transform="translate(125 94) rotate(8)"><rect width="94" height="35" rx="4" /><text x="12" y="23">button</text></g>
+		<g transform="translate(225 87) rotate(-22)"><rect width="88" height="35" rx="4" /><text x="16" y="23">footer</text></g>
+		<path class="secondary" d="M85 20 V60 M77 52 L85 60 L93 52 M260 12 V47 M252 39 L260 47 L268 39" />
+		<path class="grid" d="M24 139 H336" />
+	</svg>

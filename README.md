@@ -1,67 +1,70 @@
-# ulik.no
+# ≠ ulik.no — Gleam + Lustre
 
-Terminal-inspirert hjemmeside for AI-eksperimenter, små prosjekter og digitale sidespor på ulik.no
+An independent comparison implementation of the complete site, based on `main`.
+The Elm alternative is PR #55; this branch is not stacked on it.
 
-## Creating a project
+## Run
 
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
+Install [Gleam 1.18.1](https://gleam.run/getting-started/installing/), Node.js, and Bun.
+This project targets JavaScript; Erlang is not required locally.
 
 ```sh
-# recreate this project
-bun x sv@0.15.3 create --template minimal --types ts --install bun .
+bun install --frozen-lockfile
+bun run dev
 ```
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+`dev` compiles Gleam, watches source changes, and starts Vite. `gleam.toml` and
+`manifest.toml` pin the Gleam package graph; `bun.lock` pins JavaScript packages.
 
 ```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+bun run check
+bun run lint
+bun run test
+bun run build
+bunx playwright install chromium
+bun run test:e2e
 ```
 
-## Building
+## Read the implementation
 
-To create a production version of your app:
+- `src/ulik.gleam`: route and page union types, navigation, shell, and lifecycle.
+- `src/pages/*.gleam`: each project's model, message union, update, and Lustre view.
+- `src/projects.gleam`, `src/discovery.gleam`: typed catalog, filters and suggestions.
+- `src/*_ffi.mjs`: explicit typed JavaScript bindings called from Gleam. No ports,
+  serialized command bus, or compiled Elm is used.
+- `src/browser/`: browser-only primitives: canvas/WebGL rendering, speech/audio,
+  screen capture, local clipboard/downloads and the text-diff library.
 
-```sh
-npm run build
-```
+Application state and HTML live in Gleam. The animation loops stay next to canvas
+and Three.js so per-frame values do not travel through UI updates. Browser-resource
+cleanup runs on navigation; stale page callbacks are rejected by route revision.
 
-You can preview the production build with `npm run preview`.
+`src/pages/screen.gleam` is a short example of state variants and browser bindings.
+`src/pages/illusions.gleam` shows a mostly pure view. `src/pages/morse.gleam` is the
+larger example of timed interactions, scoring and history.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## Static HTML and deployment
 
-## Pull request previews
+The build uses Lustre's own `element.to_string` on the same views to prerender all
+15 routes. Content and ordinary links work without JavaScript. Interactive canvas,
+WebGL, speech and capture need JavaScript and browser support. Output is `dist/`;
+Gleam's separate `build/` directory contains compiler artifacts only.
 
-`Firebase PR preview` builds every opened, updated or reopened PR. For same-repository
-PRs, it publishes the static build to channel `pr-<number>` on the existing
-`beta-ulik-no` Hosting site in project `eidjord`, using the existing `GCP_SA_KEY`
-secret. It never deploys to a live channel. The Firebase action maintains its standard PR comment with the
-public test URL, commit and expiry after a successful deployment. Channels expire
-7 days after their last deployment, including after a PR is closed.
+Client navigation keeps one application document, ignores repeated same-URL clicks,
+and restores each history entry's scroll after the new page renders.
 
-The build job receives no Firebase secrets. A fresh deployment runner downloads
-only the static build and uses a fixed, beta-only configuration; it does not
-execute PR code or read the PR's Firebase configuration. Fork and Dependabot PRs
-are built but skip deployment and commenting. No extra credentials are created. A current-head check skips outdated builds; if a
-new commit arrives during deployment, the comment labels the deployed commit and
-the next serialized run refreshes it.
+Firebase PR previews remain isolated channels on the `beta-ulik-no` site in the
+`eidjord` project. Preview deployment receives only static artifacts on a fresh
+runner. Pushes to `main` retain beta deployment; production still requires a
+published release. This comparison PR does not merge or publish a release.
 
-This workflow can preview its own PR. To enable it for the other open PRs, merge
-this workflow first, then update those branches from `main` (or reopen the PRs
-once their merge result contains the workflow). A PR build/deploy failure leaves
-the previous successful preview and its commit-labelled comment in place.
+## Tests
 
-References: [Firebase previews](https://firebase.google.com/docs/hosting/github-integration),
-[Hosting deploy action](https://github.com/FirebaseExtended/action-hosting-deploy),
-[GitHub PR events and fork restrictions](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
+Gleeunit covers routing, models, scoring, bounded configuration and views. Vitest
+covers browser resource lifecycle and rendering engines. Playwright exercises all
+nine projects, static/no-JS pages, keyboard/touch input, reduced motion, repeated
+operations, cleanup, client navigation and Back/Forward scroll.
+
+Speech synthesis and the screen-permission API are mocked in browser tests. Capture
+tests use real canvas-backed `MediaStream`s after the mocked grant; they do not
+verify an operating-system picker or a real speech voice.

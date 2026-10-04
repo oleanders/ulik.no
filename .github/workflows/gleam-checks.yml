@@ -1,0 +1,31 @@
+name: Gleam browser checks
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "28"
+          gleam-version: "1.18.1"
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bunx playwright install --with-deps chromium
+      - name: Check formatting and all browser flows
+        run: |
+          bun run lint
+          bun run test:e2e
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: gleam-browser-results
+          path: test-results/
+          retention-days: 7

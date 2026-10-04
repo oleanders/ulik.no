@@ -1,0 +1,521 @@
+/* biome-ignore-all lint/style/noDescendingSpecificity: These independent page scopes preserve each original page’s cascade. */
+.diff-page .head {
+	display: grid;
+	gap: 0.75rem;
+	margin-bottom: 1.25rem;
+}
+
+.diff-page .head-row {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+}
+
+.diff-page h1 {
+	margin: 0;
+}
+
+.diff-page .desc {
+	max-width: 65ch;
+	color: var(--color-text-soft);
+	margin: 0;
+}
+
+.diff-page .status {
+	padding: 0.25rem 0.55rem;
+	border-radius: 999px;
+	border: 1px solid currentColor;
+	font-size: 0.8rem;
+}
+
+.diff-page .status.active {
+	color: var(--color-primary);
+}
+
+.diff-page .controls {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+.diff-page .mode {
+	display: inline-flex;
+	gap: 0;
+	border: 1px solid var(--color-border-strong);
+	border-radius: 0.5rem;
+	overflow: hidden;
+}
+
+.diff-page .mode button {
+	border: none;
+	border-radius: 0;
+}
+
+.diff-page .mode button.active {
+	background: var(--color-surface);
+	color: var(--color-primary);
+}
+
+.diff-page button {
+	font-family: inherit;
+	font-size: 0.9rem;
+	padding: 0.4rem 0.85rem;
+	background: var(--color-surface-alt);
+	color: var(--color-text);
+	border: 1px solid var(--color-border-strong);
+	border-radius: 0.5rem;
+	cursor: pointer;
+}
+
+.diff-page button:hover,
+.diff-page button:focus-visible {
+	border-color: var(--color-secondary);
+	color: var(--color-secondary);
+}
+
+.diff-page .inputs {
+	display: grid;
+	gap: 1rem;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	margin-bottom: 1.25rem;
+}
+
+.diff-page .pane {
+	display: grid;
+	gap: 0.5rem;
+}
+
+.diff-page .pane-head {
+	color: var(--color-text-muted);
+	font-size: 0.9rem;
+}
+
+.diff-page textarea {
+	font-family: inherit;
+	font-size: 0.95rem;
+	min-height: 240px;
+	padding: 0.85rem;
+	background: var(--color-surface-alt);
+	color: var(--color-text);
+	border: 1px solid var(--color-border);
+	border-radius: 0.6rem;
+	resize: vertical;
+	line-height: 1.5;
+}
+
+.diff-page textarea:focus-visible {
+	outline: none;
+	border-color: var(--color-secondary);
+}
+
+.diff-page .diff-output {
+	display: grid;
+	gap: 0.75rem;
+}
+
+.diff-page .diff-head {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+.diff-page .stats {
+	display: flex;
+	gap: 0.75rem;
+	font-size: 0.9rem;
+}
+
+.diff-page .added {
+	color: var(--color-primary);
+}
+
+.diff-page .removed {
+	color: #ff6b6b;
+}
+
+.diff-page .empty {
+	margin: 0;
+	color: var(--color-text-muted);
+}
+
+.diff-page .diff {
+	margin: 0;
+	padding: 0.75rem;
+	background: #050505;
+	border: 1px solid var(--color-border);
+	border-radius: 0.5rem;
+	font-family: inherit;
+	font-size: 0.9rem;
+	line-height: 1.55;
+	white-space: pre-wrap;
+	word-break: break-word;
+	overflow-x: auto;
+	max-height: 60vh;
+}
+
+.diff-page .line.added {
+	background: rgba(0, 255, 136, 0.15);
+	color: var(--color-primary);
+}
+
+.diff-page .line.removed {
+	background: rgba(255, 107, 107, 0.15);
+	color: #ff6b6b;
+	text-decoration: line-through;
+	text-decoration-color: rgba(255, 107, 107, 0.5);
+}
+
+.diff-page .line.context {
+	color: var(--color-text-soft);
+}
+
+.screen-page .head,
+.screen-page .controls {
+	display: grid;
+	gap: 0.85rem;
+}
+
+.screen-page .controls {
+	margin-top: 1rem;
+}
+
+.screen-page h1,
+.screen-page p {
+	margin: 0;
+}
+
+.screen-page .head-row {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+}
+
+.screen-page .description {
+	max-width: 68ch;
+	color: var(--color-text-soft);
+}
+
+.screen-page .actions {
+	display: flex;
+	gap: 0.6rem;
+	flex-wrap: wrap;
+}
+
+.screen-page button {
+	border: 1px solid var(--color-primary);
+	background: color-mix(in oklab, var(--color-primary) 15%, transparent);
+	color: var(--color-primary);
+	padding: 0.45rem 0.75rem;
+	border-radius: 0.45rem;
+	font: inherit;
+	cursor: pointer;
+}
+
+.screen-page button.ghost {
+	border-color: var(--color-text-soft);
+	color: var(--color-text-soft);
+	background: transparent;
+}
+
+.screen-page button:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.screen-page .option {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	color: var(--color-text-soft);
+}
+
+.screen-page .status {
+	padding: 0.25rem 0.55rem;
+	border-radius: 999px;
+	border: 1px solid currentColor;
+	font-size: 0.8rem;
+}
+
+.screen-page .status.idle,
+.screen-page .status.sharing {
+	color: var(--color-primary);
+}
+
+.screen-page .status.error {
+	color: #ff8a80;
+}
+
+.screen-page .status-line {
+	font-size: 0.95rem;
+}
+
+.screen-page .status-line.idle {
+	color: var(--color-text-soft);
+}
+
+.screen-page .status-line.sharing {
+	color: var(--color-primary);
+}
+
+.screen-page .status-line.error {
+	color: #ff8a80;
+}
+
+.screen-page .source {
+	color: var(--color-secondary);
+	font-size: 0.9rem;
+}
+
+.screen-page .preview {
+	border: 1px dashed var(--color-border);
+	border-radius: 0.7rem;
+	padding: 0.5rem;
+	background: color-mix(in oklab, var(--color-bg-panel) 82%, black);
+}
+
+.screen-page .preview video {
+	display: block;
+	width: 100%;
+	max-height: min(64vh, 580px);
+	background: #000;
+	border-radius: 0.45rem;
+}
+
+.screen-page .preview[data-active="false"] video {
+	min-height: 220px;
+}
+
+.illusions-page.experiment {
+	display: grid;
+	gap: 1.2rem;
+}
+
+.illusions-page .heading,
+.illusions-page .question,
+.illusions-page .bottom {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+.illusions-page .heading .prompt {
+	font-size: 0.75rem;
+}
+
+.illusions-page h1 {
+	margin: 0.6rem 0 0;
+	font-size: clamp(2rem, 6vw, 3.5rem);
+}
+
+.illusions-page .heading > p {
+	font-size: 0.85rem;
+	color: var(--color-text-soft);
+}
+
+.illusions-page .heading > p span {
+	color: var(--color-primary);
+}
+
+.illusions-page .choices {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.6rem;
+}
+
+.illusions-page button {
+	min-height: 44px;
+	padding: 0.7rem 1rem;
+	border: 1px solid var(--color-border-strong);
+	border-radius: 0.4rem;
+	background: var(--color-surface-alt);
+	color: var(--color-text);
+	font-size: 0.8rem;
+	cursor: pointer;
+}
+
+.illusions-page button:hover {
+	border-color: var(--color-secondary);
+}
+
+.illusions-page button:disabled {
+	opacity: 0.55;
+	cursor: default;
+}
+
+.illusions-page .choices button[aria-pressed="true"] {
+	border-color: var(--color-primary);
+	color: var(--color-primary);
+	background: #0a251a;
+}
+
+.illusions-page .choices span {
+	color: var(--color-text-soft);
+	font-size: 0.7rem;
+	margin-right: 0.4rem;
+}
+
+.illusions-page .question h2 {
+	font-size: clamp(1rem, 2.5vw, 1.35rem);
+	margin: 0;
+	line-height: 1.5;
+}
+
+.illusions-page .question > span {
+	font-size: 0.75rem;
+	color: var(--color-text-soft);
+}
+
+.illusions-page .stage {
+	overflow: hidden;
+	border: 1px solid var(--color-border-strong);
+	border-radius: 0.65rem;
+	background: #171e1a;
+}
+
+.illusions-page svg {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.illusions-page svg text {
+	fill: #e0e0e0;
+	font: 22px monospace;
+	text-anchor: middle;
+}
+
+.illusions-page .measure {
+	fill: none;
+	stroke: #00ccff;
+	stroke-width: 2;
+	stroke-dasharray: 5 5;
+}
+
+.illusions-page .controls {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 0.7rem;
+}
+
+.illusions-page .reveal {
+	background: var(--color-primary);
+	color: #052116;
+	border-color: var(--color-primary);
+	font-weight: 700;
+}
+
+.illusions-page .reveal:hover {
+	background: var(--color-secondary);
+}
+
+.illusions-page .slider {
+	display: grid;
+	gap: 0.35rem;
+	margin-left: auto;
+	min-width: min(100%, 260px);
+}
+
+.illusions-page label {
+	display: flex;
+	justify-content: space-between;
+	gap: 1rem;
+	font-size: 0.8rem;
+}
+
+.illusions-page output {
+	color: var(--color-secondary);
+}
+
+.illusions-page input {
+	width: 100%;
+	height: 24px;
+	margin: 0;
+	accent-color: var(--color-primary);
+}
+
+.illusions-page #slider-help {
+	font-size: 0.7rem;
+	color: var(--color-text-soft);
+}
+
+.illusions-page button:focus-visible,
+.illusions-page input:focus-visible,
+.illusions-page a:focus-visible {
+	outline: 2px solid var(--color-secondary);
+	outline-offset: 4px;
+}
+
+.illusions-page .answer {
+	padding: 1.2rem;
+	border-left: 2px solid var(--color-primary);
+	background: #101713;
+	line-height: 1.7;
+}
+
+.illusions-page .answer strong {
+	font-size: 0.95rem;
+}
+
+.illusions-page p {
+	margin: 0;
+}
+
+.illusions-page .answer p {
+	margin-top: 0.5rem;
+	max-width: 80ch;
+	color: var(--color-text-soft);
+	font-size: 0.85rem;
+}
+
+.illusions-page .bottom {
+	align-items: start;
+	font-size: 0.7rem;
+	line-height: 1.7;
+}
+
+.illusions-page .bottom p {
+	max-width: 55ch;
+	color: var(--color-text-soft);
+}
+
+.illusions-page .sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+@media (max-width: 640px) {
+	.illusions-page .slider {
+		margin-left: 0;
+		width: 100%;
+		margin-top: 0.5rem;
+	}
+
+	.illusions-page .choices {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.illusions-page .choices button {
+		padding: 0.65rem 0.4rem;
+		font-size: 0.72rem;
+	}
+
+	.illusions-page .choices span {
+		display: block;
+		margin: 0 0 0.35rem;
+	}
+}
