@@ -528,12 +528,12 @@ setupView model =
         , div [ class "settings-grid" ]
             [ label [ for "min-words" ]
                 [ text "Min"
-                , select [ id "min-words", value (String.fromInt model.minWords), onInput ChangeMinimum ]
+                , select [ id "min-words", attribute "aria-label" "Min", value (String.fromInt model.minWords), onInput ChangeMinimum ]
                     (List.map (wordOption model.minWords) (List.range 1 model.maxWords))
                 ]
             , label [ for "max-words" ]
                 [ text "Maks"
-                , select [ id "max-words", value (String.fromInt model.maxWords), onInput ChangeMaximum ]
+                , select [ id "max-words", attribute "aria-label" "Maks", value (String.fromInt model.maxWords), onInput ChangeMaximum ]
                     (List.map (wordOption model.maxWords) (List.range model.minWords 10))
                 ]
             ]

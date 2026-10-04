@@ -30,7 +30,7 @@ for (const route of routes) {
 		runScripts: 'outside-only',
 		pretendToBeVisual: true,
 	});
-	const scripts = [...dom.window.document.querySelectorAll('script')]
+	const scripts = [...dom.window.document.body.querySelectorAll('script')]
 		.map((script) => script.outerHTML)
 		.join('');
 	dom.window.eval(compiledElm);

@@ -9,6 +9,9 @@ import * as flow from './browser/flow.js';
 import * as preview from './browser/preview.js';
 import * as tools from './browser/tools.js';
 
+// Elm must create its own anchors to install Browser.application navigation handlers.
+// The prerendered body remains available until this synchronous startup.
+document.body.replaceChildren();
 const app = window.Elm.Main.init({ flags: { version: __APP_VERSION__, prerender: false } });
 const adapters = { audio, flow, falling, tools, preview };
 let robot;

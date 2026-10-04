@@ -690,13 +690,30 @@ test('all migrated routes survive repeated back/forward and unknown routes offer
 	for (const [route, title] of routes) {
 		await page.goto(route);
 		await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
+		const documentIdentity = await page.evaluate(() => {
+			window.__migrationDocument = crypto.randomUUID();
+			return window.__migrationDocument;
+		});
 		await page.getByRole('link', { name: '~/om', exact: true }).click();
+		await expect(page.getByRole('heading', { name: 'Om', exact: true })).toBeVisible();
+		expect(
+			await page.evaluate(() => window.__migrationDocument),
+			'Internal links must retain the Elm application document',
+		).toBe(documentIdentity);
 		for (let iteration = 0; iteration < 2; iteration++) {
 			await page.goBack();
 			await expect(page).toHaveURL(new RegExp(`${route}$`));
 			await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
+			expect(
+				await page.evaluate(() => window.__migrationDocument),
+				'Back must use the existing Elm application',
+			).toBe(documentIdentity);
 			await page.goForward();
 			await expect(page.getByRole('heading', { name: 'Om', exact: true })).toBeVisible();
+			expect(
+				await page.evaluate(() => window.__migrationDocument),
+				'Forward must use the existing Elm application',
+			).toBe(documentIdentity);
 			await expect(page.locator('canvas, video, .fall-clone')).toHaveCount(0);
 		}
 	}
