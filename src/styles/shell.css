@@ -315,6 +315,12 @@ button {
 }
 
 .project-card {
+	> img {
+		width: 100%;
+		height: auto;
+		aspect-ratio: 360 / 160;
+	}
+
 	& {
 		display: flex;
 		flex-direction: column;

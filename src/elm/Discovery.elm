@@ -113,7 +113,7 @@ surprise excluded =
 card : Project -> Html msg
 card project =
     a [ class "project-card card", href (Projects.href project.id) ]
-        [ img [ src ("/previews/" ++ Projects.slug project.id ++ ".svg"), alt "", attribute "aria-hidden" "true" ] []
+        [ img [ src ("/previews/" ++ Projects.slug project.id ++ ".svg"), width 360, height 160, alt "", attribute "aria-hidden" "true" ] []
         , div [ class "body" ]
             [ div [ class "meta" ]
                 [ span [] [ text (Projects.categoryLabel project.category) ]

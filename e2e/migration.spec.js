@@ -732,31 +732,102 @@ test('all migrated routes survive repeated back/forward and unknown routes offer
 
 test('explicit navigation starts at the top while back and forward restore both scroll positions', async ({
 	page,
-}) => {
+}, testInfo) => {
 	await disableAudio(page);
-	await page.setViewportSize({ width: 800, height: 500 });
-	await page.goto('/projects');
-	const morseCard = page.getByRole('link', { name: /morse≠kode/ });
-	await morseCard.scrollIntoViewIfNeeded();
-	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(100);
-	const catalogScroll = await page.evaluate(() => scrollY);
-	await morseCard.click();
-	await expect(page).toHaveURL(/\/projects\/morsekode$/);
-	await expect(page.getByRole('heading', { name: 'morse≠kode', exact: true })).toBeVisible();
-	await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
-	await page.getByRole('region', { name: 'Rundehistorikk' }).scrollIntoViewIfNeeded();
-	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(100);
-	const morseScroll = await page.evaluate(() => scrollY);
-	for (let iteration = 0; iteration < 3; iteration++) {
-		await page.goBack();
-		await expect(page).toHaveURL(/\/projects$/);
-		await expect
-			.poll(() => page.evaluate((saved) => Math.abs(scrollY - saved), catalogScroll))
-			.toBeLessThanOrEqual(2);
-		await page.goForward();
+	await page.addInitScript(() => {
+		window.__scrollDiagnostics = [];
+		const record = (event, details = {}) => {
+			window.__scrollDiagnostics.push({
+				event,
+				time: Math.round(performance.now()),
+				path: location.pathname,
+				historyState: history.state,
+				x: scrollX,
+				y: scrollY,
+				height: document.documentElement.scrollHeight,
+				viewport: innerHeight,
+				...details,
+			});
+		};
+		const nativeScrollTo = window.scrollTo.bind(window);
+		window.scrollTo = (...args) => {
+			record('scrollTo:before', { requested: args });
+			nativeScrollTo(...args);
+			record('scrollTo:after');
+			requestAnimationFrame(() => record('scrollTo:nextFrame'));
+		};
+		for (const method of ['pushState', 'replaceState']) {
+			const nativeMethod = history[method].bind(history);
+			history[method] = (...args) => {
+				record(`${method}:before`, { destination: args[2] });
+				const result = nativeMethod(...args);
+				record(`${method}:after`);
+				return result;
+			};
+		}
+		window.addEventListener('popstate', () => record('popstate'), true);
+		window.addEventListener('scroll', () => record('scroll'));
+	});
+	let catalogScroll;
+	let morseScroll;
+	try {
+		await page.setViewportSize({ width: 800, height: 500 });
+		await page.goto('/projects');
+		const morseCard = page.getByRole('link', { name: /morse≠kode/ });
+		await morseCard.scrollIntoViewIfNeeded();
+		await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(100);
+		catalogScroll = await page.evaluate(() => scrollY);
+		await morseCard.click();
 		await expect(page).toHaveURL(/\/projects\/morsekode$/);
-		await expect
-			.poll(() => page.evaluate((saved) => Math.abs(scrollY - saved), morseScroll))
-			.toBeLessThanOrEqual(2);
+		await expect(page.getByRole('heading', { name: 'morse≠kode', exact: true })).toBeVisible();
+		await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+		await page.getByRole('region', { name: 'Rundehistorikk' }).scrollIntoViewIfNeeded();
+		await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(100);
+		morseScroll = await page.evaluate(() => scrollY);
+		for (let iteration = 0; iteration < 3; iteration++) {
+			await page.goBack();
+			await expect(page).toHaveURL(/\/projects$/);
+			await expect
+				.poll(() => page.evaluate((saved) => Math.abs(scrollY - saved), catalogScroll), {
+					message: `Restore catalog scroll to ${catalogScroll}px on Back ${iteration + 1}`,
+				})
+				.toBeLessThanOrEqual(2);
+			await page.goForward();
+			await expect(page).toHaveURL(/\/projects\/morsekode$/);
+			await expect
+				.poll(() => page.evaluate((saved) => Math.abs(scrollY - saved), morseScroll), {
+					message: `Restore Morse scroll to ${morseScroll}px on Forward ${iteration + 1}`,
+				})
+				.toBeLessThanOrEqual(2);
+		}
+	} catch (error) {
+		const diagnostics = {
+			expected: { catalogScroll, morseScroll },
+			browser: await page.evaluate(() => ({
+				events: window.__scrollDiagnostics,
+				current: {
+					path: location.pathname,
+					x: scrollX,
+					y: scrollY,
+					height: document.documentElement.scrollHeight,
+					viewport: innerHeight,
+				},
+				images: [...document.images].map((image) => ({
+					source: image.getAttribute('src'),
+					complete: image.complete,
+					width: image.width,
+					height: image.height,
+					naturalWidth: image.naturalWidth,
+					naturalHeight: image.naturalHeight,
+				})),
+			})),
+		};
+		const details = JSON.stringify(diagnostics, null, 2);
+		console.log(`Scroll restoration diagnostics:\n${details}`);
+		await testInfo.attach('scroll-diagnostics.json', {
+			body: Buffer.from(details),
+			contentType: 'application/json',
+		});
+		throw error;
 	}
 });
