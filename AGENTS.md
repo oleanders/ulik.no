@@ -1,323 +1,41 @@
-## Project Configuration
+# Project guidance
 
-- **Language**: TypeScript
-- **Package Manager**: bun
-- **Add-ons**: none
+ulik.no uses Elm 0.19.1, elm-watch, JavaScript browser adapters, Bun, Vite, Biome, Vitest, elm-test and Playwright.
 
----
+## Commands
 
-# AGENTS.md
-
-## Project Overview
-
-This project uses:
-
-- SvelteKit
-- Svelte 5
-- TypeScript
-- Bun
-- Vite
-- Biome
-- Vitest
-- Playwright
-
-Prefer modern, minimal and maintainable solutions.
-
----
-
-# Development Commands
-
-## Install
-
-```bash
+```sh
 bun install
-```
-
-## Development
-
-```bash
 bun run dev
-```
-
-## Type Checking
-
-```bash
-bun run check
-```
-
-## Lint
-
-```bash
-bun run lint
-```
-
-## Format
-
-```bash
-bun run format
-```
-
-## Unit Tests
-
-```bash
-bun run test
-```
-
-## E2E Tests
-
-```bash
-bunx playwright test
-```
-
-## Production Build
-
-```bash
-bun run build
-```
-
----
-
-# General Rules
-
-- Use TypeScript everywhere.
-- Prefer explicit types for exported APIs.
-- Avoid `any`.
-- Keep files small and focused.
-- Do not introduce unnecessary abstractions.
-- Do not add dependencies unless clearly justified.
-- Prefer composition over inheritance.
-- Prefer pure functions where possible.
-- Prefer readability over cleverness.
-- Keep diffs minimal.
-- Avoid rewriting unrelated code.
-
----
-
-# Svelte Rules
-
-## Use Svelte 5 Patterns
-
-- Prefer Svelte 5 runes.
-- Avoid legacy `$:` reactive syntax unless necessary.
-- Prefer derived state over manual synchronization.
-- Prefer explicit effects.
-- Avoid unnecessary reactive state.
-
-## Components
-
-- Keep components focused on one responsibility.
-- Prefer props over global state.
-- Avoid deeply nested component trees.
-- Extract reusable UI into `src/lib/components`.
-- Avoid overly generic UI abstractions.
-
-## State Management
-
-- Use component-local state first.
-- Use stores only when state must be shared.
-- Avoid global stores for temporary UI state.
-- Keep state ownership clear.
-
-## Data Fetching
-
-- Prefer SvelteKit `load` functions.
-- Fetch on the server when possible.
-- Avoid direct API fetching inside components unless UI-local.
-- Keep server-only logic in server files.
-
----
-
-# Project Structure
-
-## Routes
-
-Route-specific code belongs close to the route.
-
-Example:
-
-```text
-src/routes/users/
-  +page.svelte
-  +page.ts
-  components/
-```
-
-## Shared Code
-
-Shared reusable code belongs in:
-
-```text
-src/lib/
-```
-
-Suggested structure:
-
-```text
-src/lib/
-  components/
-  server/
-  stores/
-  types/
-  utils/
-```
-
----
-
-# TypeScript Rules
-
-- Prefer `type` over `interface` unless extension is needed.
-- Avoid type assertions unless unavoidable.
-- Use discriminated unions where appropriate.
-- Keep types close to usage unless broadly shared.
-- Export explicit public types.
-
----
-
-# Styling
-
-- Prefer scoped component styles.
-- Avoid global CSS unless necessary.
-- Prefer CSS variables for theming.
-- Keep styling simple and maintainable.
-- Avoid heavy CSS frameworks unless justified.
-
----
-
-# Forms
-
-- Prefer progressive enhancement.
-- Validate on both client and server.
-- Use zod for schema validation.
-- Keep form logic explicit and readable.
-
----
-
-# API Rules
-
-- Validate all external input.
-- Never trust client-side validation alone.
-- Keep API responses typed.
-- Handle loading and error states explicitly.
-- Prefer small focused endpoints.
-
----
-
-# Testing Rules
-
-## Unit Tests
-
-Use Vitest for:
-
-- business logic
-- utility functions
-- data transformations
-- complex component behavior
-
-## E2E Tests
-
-Use Playwright for:
-
-- routing
-- forms
-- authentication
-- critical user flows
-- regression testing
-
----
-
-# Validation Requirements
-
-Before completing any task, always run:
-
-```bash
 bun run check
 bun run lint
 bun run test
 bun run build
+bun run test:e2e
 ```
 
-For UI or routing changes, also run:
+Run all checks before completing a change. Browser tests use the production build, including prerendered routes. Install Chromium with `bunx playwright install chromium` if necessary. Report any check that could not run; a focused check is not a complete pass.
 
-```bash
-bunx playwright test
-```
+## Architecture
 
-Do not consider work complete if commands fail.
+- Elm owns routing, application state, validation and HTML/SVG views.
+- Use union types for alternatives and states; use records for ordinary data.
+- Keep pages in `src/elm/Pages/` with explicit `init`, `update`, `view` and `subscriptions`.
+- Keep shared project metadata in `Projects.elm`.
+- Keep exactly one outgoing and one incoming port in `Ports.elm` unless a specific need justifies more.
+- Browser-only effects belong in `src/browser/`, using tagged `domain`/`action` messages. Elm must decode incoming values before using them.
+- Every browser adapter must clean up listeners, timers, animation frames and resources in `dispose()`. Guard late asynchronous results after navigation.
+- Keep code readable and focused. Avoid generic effect frameworks, unnecessary abstractions, dependencies or speculative features.
+- Do not reintroduce a UI framework in JavaScript.
 
----
+## UI and tests
 
-# Dependency Guidelines
+Preserve Norwegian text, existing routes and accessible keyboard/touch controls. Respect reduced motion. Use semantic HTML and labeled native controls. Scope CSS by page class. Keep essential static content in Elm views so prerendering uses the same source.
 
-Preferred libraries:
+Test repeated actions, interrupted flows and Back/Forward as well as the happy path. Use elm-test for Elm behavior, Vitest for browser-adapter algorithms and Playwright for integration. Mock permission prompts in automated media tests; never capture a real user's screen for testing without authorization.
 
-- zod
-- @tanstack/svelte-query
+## Deployment and security
 
-Avoid adding:
+Keep Firebase preview builds separated from deployment credentials. Preserve the existing beta/main and release/production targets. A request to create a PR does not authorize merging it or publishing a release. Never expose secrets in client code. Open new PRs as drafts unless directed otherwise.
 
-- large utility libraries
-- unnecessary state frameworks
-- duplicate tooling
-- deprecated packages
-
----
-
-# Performance
-
-- Avoid unnecessary reactivity.
-- Avoid unnecessary client-side rendering.
-- Lazy load heavy features when appropriate.
-- Prefer simple solutions over premature optimization.
-- Minimize unnecessary rerenders.
-
----
-
-# Accessibility
-
-- Prefer semantic HTML.
-- Ensure keyboard accessibility.
-- Use proper labels for forms.
-- Avoid inaccessible custom controls.
-- Ensure sufficient contrast.
-- Prefer native elements over recreated controls.
-
----
-
-# Security
-
-- Validate all external input.
-- Never expose secrets to the client.
-- Keep environment variables server-only unless public.
-- Sanitize untrusted content.
-- Avoid unsafe HTML rendering.
-
----
-
-# Agent Behavior
-
-- Do not rewrite unrelated code.
-- Preserve existing architecture unless explicitly changing it.
-- Prefer incremental refactoring over large rewrites.
-- Explain non-trivial changes briefly.
-- Ask before introducing major structural changes.
-- Prefer consistency with existing patterns.
-- Avoid speculative abstractions.
-- Avoid placeholder implementations unless requested.
-
----
-
-# Git Guidelines
-
-- Keep commits focused and small.
-- Avoid mixing refactors with feature changes.
-- Preserve existing formatting conventions.
-- Do not modify generated files unless required.
-
----
-
-# Documentation
-
-- Document non-obvious decisions.
-- Keep README updates concise.
-- Prefer examples over long explanations.
-- Keep comments focused on intent, not mechanics.
+Keep commits focused. Preserve unrelated user changes and do not weaken tests to hide regressions. Document non-obvious decisions briefly.

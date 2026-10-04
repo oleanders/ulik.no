@@ -1,67 +1,46 @@
 # ulik.no
 
-Terminal-inspirert hjemmeside for AI-eksperimenter, små prosjekter og digitale sidespor på ulik.no
+Små eksperimenter, rare ideer og verktøy. Elm eier sider, tilstand og navigasjon. JavaScript brukes ved nettlesergrensene: canvas, Three.js, lyd, tale, skjermdeling og tekstsammenligning.
 
-## Creating a project
+## Kom i gang
 
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
+Installer [Bun](https://bun.sh), og kjør:
 
 ```sh
-# recreate this project
-bun x sv@0.15.3 create --template minimal --types ts --install bun .
+bun install
+bun run dev
 ```
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+`dev` starter Vite og `elm-watch hot`. Elm-kompilatoren følger med som utviklingsavhengighet. Elm-endringer oppdateres av elm-watch; CSS og JavaScript håndteres av Vite.
 
 ```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+bun run check       # Elm-kompilering og JavaScript-syntaks
+bun run lint        # elm-format og Biome
+bun run test        # Vitest for adaptere, elm-test for Elm-logikk
+bun run test:e2e    # Playwright mot produksjonsbygget
+bun run build      # elm-watch make --optimize, Vite og statisk HTML
 ```
 
-## Building
+Installer nettleseren før første E2E-kjøring: `bunx playwright install chromium`.
 
-To create a production version of your app:
+## Koden
 
-```sh
-npm run build
-```
+- `src/elm/Main.elm`: `Browser.application`, ruter og sidens livsløp
+- `src/elm/Pages/`: én modul per eksperiment med `init`, `update`, `view` og `subscriptions`
+- `src/elm/Projects.elm` og `Discovery.elm`: prosjektkatalog og oppdagelse
+- `src/elm/Ports.elm`: én utgående port (`send`) og én inngående (`receive`)
+- `src/browser/`: små adaptere for det Elm ikke kan gjøre direkte
+- `src/styles/`: sidens CSS, avgrenset med sideklasser
+- `tests/` og `e2e/`: Elm-enhetstester og nettlesertester
 
-You can preview the production build with `npm run preview`.
+Alternativer og tilstander uttrykkes som union types. Records brukes til data som naturlig hører sammen, for eksempel en prosjektbeskrivelse eller et sett feltinnstillinger. Det er ingen generell side- eller effektplattform å lære først.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Portmeldinger har et `domain` og en `action`; hver adapter dekoder sitt avgrensede innhold. Ved navigasjon ryddes ressursene før neste side startes. Det stopper animasjoner, lyd og skjermdeling, også når en eldre asynkron forespørsel kommer tilbake sent. Three.js lastes først når robotsiden åpnes.
 
-## Pull request previews
+`diff`-biblioteket beholdes for de eksisterende linje- og ordforskjellene. Elm eier input, visning, statistikk og versjonering av resultatet. WebGL og canvas-rendering ligger i JavaScript, mens kontrollene og deres tilstand ligger i Elm.
 
-`Firebase PR preview` builds every opened, updated or reopened PR. For same-repository
-PRs, it publishes the static build to channel `pr-<number>` on the existing
-`beta-ulik-no` Hosting site in project `eidjord`, using the existing `GCP_SA_KEY`
-secret. It never deploys to a live channel. The Firebase action maintains its standard PR comment with the
-public test URL, commit and expiry after a successful deployment. Channels expire
-7 days after their last deployment, including after a PR is closed.
+## Statisk innhold og publisering
 
-The build job receives no Firebase secrets. A fresh deployment runner downloads
-only the static build and uses a fixed, beta-only configuration; it does not
-execute PR code or read the PR's Firebase configuration. Fork and Dependabot PRs
-are built but skip deployment and commenting. No extra credentials are created. A current-head check skips outdated builds; if a
-new commit arrives during deployment, the comment labels the deployed commit and
-the next serialized run refreshes it.
+Produksjonsbygget ligger i `build/`. `scripts/prerender.js` kjører de samme Elm-visningene i JSDOM og lager HTML for alle eksisterende ruter. Katalog, lenker, beskrivelser og illusjonenes SVG er dermed tilgjengelige uten JavaScript; interaksjon krever JavaScript. Nettleseren starter deretter den samme Elm-appen.
 
-This workflow can preview its own PR. To enable it for the other open PRs, merge
-this workflow first, then update those branches from `main` (or reopen the PRs
-once their merge result contains the workflow). A PR build/deploy failure leaves
-the previous successful preview and its commit-labelled comment in place.
-
-References: [Firebase previews](https://firebase.google.com/docs/hosting/github-integration),
-[Hosting deploy action](https://github.com/FirebaseExtended/action-hosting-deploy),
-[GitHub PR events and fork restrictions](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
+`APP_VERSION` vises i bunnteksten. Push til `main` publiserer fortsatt til beta. En publisert release bruker den eksisterende produksjonsflyten. Pull requests får egne Firebase-preview-kanaler, bygget uten deploy-hemmeligheter og publisert fra en separat runner. Migreringen endrer ikke disse publiseringsmålene.

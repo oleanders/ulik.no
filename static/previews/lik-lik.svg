@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 160"><title>lik-lik</title><style>
+	svg {
+		display: block;
+		width: 100%;
+		height: auto;
+		background: radial-gradient(ellipse at center, #0f241e, #0a100f 80%);
+		fill: none;
+		stroke: #00ff88;
+		stroke-width: 1.5;
+	}
+
+	text {
+		fill: #00ff88;
+		stroke: none;
+		font: 14px monospace;
+	}
+
+	.big {
+		font-size: 68px;
+	}
+
+	.word {
+		font-size: 26px;
+	}
+
+	.secondary, .flow:nth-child(even) {
+		stroke: #00ccff;
+	}
+
+	.secondary-text {
+		fill: #00ccff;
+	}
+
+	.grid {
+		stroke: #295744;
+	}
+
+	.solid {
+		fill: #00ff88;
+	}
+
+	.muted {
+		fill: #a7b2ad;
+	}
+
+	.screen {
+		fill: #0a1513;
+		stroke: #00ccff;
+	}
+
+	.morse {
+		stroke-width: 10;
+		stroke-linecap: round;
+	}
+
+	.removed {
+		stroke: #f5a3aa;
+		fill: #35191e;
+	}
+
+	.removed-text {
+		fill: #f5a3aa;
+	}
+
+	.added {
+		fill: #103526;
+	}
+</style>
+		<rect x="24" y="24" width="156" height="112" fill="#101612" stroke="none" />
+		<rect x="180" y="24" width="156" height="112" fill="#e2e8e4" stroke="none" />
+		<rect x="80" y="59" width="42" height="42" fill="#82978b" stroke="none" />
+		<rect x="236" y="59" width="42" height="42" fill="#82978b" stroke="none" />
+	</svg>
