@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test.setTimeout(60000);
+test.setTimeout(120000);
 
 async function openTrack(page) {
 	const errors = [];
@@ -23,7 +23,9 @@ async function openTrack(page) {
 		);
 		throw error;
 	}
-	await expect(page.locator('#marble-canvas')).toHaveAttribute('data-state', 'ready');
+	await expect(page.locator('#marble-canvas')).toHaveAttribute('data-state', 'ready', {
+		timeout: 30000,
+	});
 }
 
 test('a real rendered track runs to the finish and can be replayed', async ({ page }, testInfo) => {
@@ -86,7 +88,9 @@ test('navigation disposes the old scene and restores a single fresh scene', asyn
 		await page.getByRole('link', { name: '~/om', exact: true }).click();
 		await expect(page.locator('canvas')).toHaveCount(0);
 		await page.goBack();
-		await expect(page.locator('#marble-canvas')).toHaveAttribute('data-state', 'ready');
+		await expect(page.locator('#marble-canvas')).toHaveAttribute('data-state', 'ready', {
+			timeout: 30000,
+		});
 		await expect(page.locator('canvas')).toHaveCount(1);
 	}
 	await page.goForward();
@@ -140,4 +144,37 @@ test('catalog links and prerendered track content remain accessible', async ({ b
 	await expect(page.getByRole('heading', { name: 'kule≠bane', exact: true })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Bytt del 1: Sving', exact: true })).toBeVisible();
 	await context.close();
+});
+
+test('a first-slot jump has a downhill run-up and visibly builds speed before takeoff', async ({
+	page,
+}, testInfo) => {
+	await openTrack(page);
+	const canvas = page.locator('#marble-canvas');
+	await page.getByRole('button', { name: 'Bytt del 1: Sving', exact: true }).click();
+	await page.getByRole('button', { name: 'Bytt del 1: Spiral', exact: true }).click();
+	await expect(page.getByRole('button', { name: 'Bytt del 1: Hopp', exact: true })).toBeVisible();
+	await page.screenshot({
+		path: testInfo.outputPath('marble-jump-first-ready.png'),
+		fullPage: true,
+	});
+	await expect(canvas).toHaveAttribute('data-segment', 'runup');
+	const releaseSpeed = Number(await canvas.getAttribute('data-speed'));
+	expect(releaseSpeed).toBeLessThan(0.5);
+	await page.getByRole('button', { name: 'Slipp kula ↗', exact: true }).click();
+	await expect
+		.poll(async () => Number(await canvas.getAttribute('data-speed')))
+		.toBeGreaterThan(releaseSpeed);
+	await expect(canvas).toHaveAttribute('data-airborne', 'false');
+	await page.screenshot({
+		path: testInfo.outputPath('marble-jump-first-runup.png'),
+		fullPage: true,
+	});
+	await expect(canvas).toHaveAttribute('data-airborne', 'true', { timeout: 25000 });
+	await page.screenshot({
+		path: testInfo.outputPath('marble-jump-first-flight.png'),
+		fullPage: true,
+	});
+	await expect(page.getByText('I mål! En runde til?')).toBeVisible({ timeout: 30000 });
+	await expect(canvas).toHaveAttribute('data-airborne', 'false');
 });

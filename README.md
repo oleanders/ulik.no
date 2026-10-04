@@ -47,6 +47,6 @@ Produksjonsbygget ligger i `build/`. `scripts/prerender.js` kjører de samme Elm
 
 ## Kulebane
 
-`/projects/kule-bane` har en ferdig tredelt bane. Hver knapp bytter mellom sving, spiral og hopp med like endepunkter. Elm eier valg og kjøretilstand; Three.js tegner banen og animerer kula langs et deterministisk spor. Dette er en guidet animasjon, ikke en generell fysikksimulator. Endringer i bane eller kulefarge stopper turen og setter kula ved start. Kameraet kan endres underveis.
+`/projects/kule-bane` har en ferdig tredelt bane med en fast startrampe som lar kula bygge fart før første del. Hver knapp bytter mellom sving, spiral og hopp med like endepunkter. Elm eier valg og kjøretilstand; Three.js tegner banen og animerer kula langs et deterministisk spor. Dette er en guidet animasjon, ikke en generell fysikksimulator. Endringer i bane eller kulefarge stopper turen og setter kula ved start. Kameraet kan endres underveis.
 
 `marble-path.test.js` verifiserer kontinuitet og hopp for alle 27 banekombinasjoner. `MarbleTest.elm` dekker kontrolltilstand og avbrudd; `e2e/marble.spec.js` dekker ekte WebGL, gjentatte turer, kamerabytte, mobil, redusert bevegelse, feil og navigasjon.

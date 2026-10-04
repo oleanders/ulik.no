@@ -10,6 +10,10 @@ const LENGTH = 7.3;
 const DROP = 1.65;
 const TURN_RADIUS = 1.3;
 const TURN_ANGLE = (Math.PI * 2) / 3;
+const RUNUP_RADIUS = 2.9;
+const RUNUP_ARC = (RUNUP_RADIUS * Math.PI) / 2;
+const RUNUP_DROP = (DROP / LENGTH) * RUNUP_ARC;
+const INITIAL_SPEED = 0.28;
 const DEFAULT_SEGMENTS = ['sweep', 'spiral', 'jump'];
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 const distance = (a, b) => Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z);
@@ -85,15 +89,41 @@ export function buildTrack(segments = DEFAULT_SEGMENTS) {
 		const previous = points.at(-1);
 		const step = previous ? distance(previous, point) : 0;
 		if (previous && step < 1e-9) return;
-		const speed = (p) => Math.min(7.2, Math.sqrt(2.6 + 6 * Math.max(0, 7.1 - p.y)));
+		const startHeight = 7.1 + RUNUP_DROP;
+		const speed = (p) =>
+			Math.min(7.2, Math.sqrt(INITIAL_SPEED ** 2 + 6 * Math.max(0, startHeight - p.y)));
 		points.push({
 			...point,
 			section,
 			kind,
 			t,
+			speed: speed(point),
 			distance: (previous?.distance ?? 0) + step,
 			time: (previous?.time ?? 0) + (previous ? step / ((speed(previous) + speed(point)) / 2) : 0),
 		});
+	};
+	// A permanent downhill approach gives every first piece the same rolling entry.
+	// Its quarter-turn stays inside the platform and meets slot 1 tangentially.
+	for (let index = 0; index <= 100; index += 1) {
+		const t = index / 100;
+		const angle = (Math.PI / 2) * t;
+		add(
+			{
+				x: origin.x - RUNUP_RADIUS * Math.cos(angle),
+				y: origin.y + RUNUP_DROP * (1 - t),
+				z: origin.z + RUNUP_RADIUS * (1 - Math.sin(angle)),
+				airborne: false,
+			},
+			-1,
+			'runup',
+			t,
+		);
+	}
+	const runup = {
+		start: 0,
+		end: points.length - 1,
+		length: points.at(-1).distance,
+		duration: points.at(-1).time,
 	};
 	for (let index = 0; index < 3; index += 1) {
 		const kind = kinds[index];
@@ -129,7 +159,7 @@ export function buildTrack(segments = DEFAULT_SEGMENTS) {
 	}
 	const length = points.at(-1).distance;
 	const duration = points.at(-1).time;
-	return { points, sections, length, duration, signature: kinds.join('-') };
+	return { points, sections, runup, length, duration, signature: kinds.join('-') };
 }
 
 function sampleBy(track, value, key) {
@@ -145,7 +175,20 @@ function sampleBy(track, value, key) {
 	const a = points[low];
 	const b = points[high];
 	const t = (target - a[key]) / Math.max(1e-12, b[key] - a[key]);
-	const length = distance(a, b);
+	const directionAt = (index) => {
+		const before = points[Math.max(0, index - 1)];
+		const after = points[Math.min(points.length - 1, index + 1)];
+		const length = distance(before, after);
+		return {
+			x: (after.x - before.x) / length,
+			y: (after.y - before.y) / length,
+			z: (after.z - before.z) / length,
+		};
+	};
+	const from = directionAt(low);
+	const to = directionAt(high);
+	const tangent = { x: lerp(from.x, to.x, t), y: lerp(from.y, to.y, t), z: lerp(from.z, to.z, t) };
+	const tangentLength = Math.hypot(tangent.x, tangent.y, tangent.z);
 	return {
 		x: lerp(a.x, b.x, t),
 		y: lerp(a.y, b.y, t),
@@ -153,8 +196,15 @@ function sampleBy(track, value, key) {
 		distance: lerp(a.distance, b.distance, t),
 		time: lerp(a.time, b.time, t),
 		progress: lerp(a.distance, b.distance, t) / track.length,
+		speed: lerp(a.speed, b.speed, t),
+		kind: t === 1 ? b.kind : a.kind,
+		section: t === 1 ? b.section : a.section,
 		airborne: t === 0 ? a.airborne : t === 1 ? b.airborne : a.airborne || b.airborne,
-		tangent: { x: (b.x - a.x) / length, y: (b.y - a.y) / length, z: (b.z - a.z) / length },
+		tangent: {
+			x: tangent.x / tangentLength,
+			y: tangent.y / tangentLength,
+			z: tangent.z / tangentLength,
+		},
 	};
 }
 

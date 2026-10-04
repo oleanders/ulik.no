@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import {
 	buildTrack,
 	MARBLE_LIFT,
@@ -36,6 +37,70 @@ function releaseTree(root) {
 	for (const geometry of geometries) geometry.dispose();
 	for (const material of materials) material.dispose();
 	for (const texture of textures) texture.dispose();
+}
+
+/** Rails, supports and scenery are static: batch their shared materials into a few draws. */
+function batchStaticMeshes(group) {
+	group.updateMatrixWorld(true);
+	const batches = new Map();
+	group.traverse((object) => {
+		if (!object.isMesh) return;
+		const key = `${object.material.id}:${object.castShadow}:${object.receiveShadow}`;
+		if (!batches.has(key)) batches.set(key, []);
+		batches.get(key).push(object);
+	});
+	for (const meshes of batches.values()) {
+		if (meshes.length < 2) continue;
+		const geometries = meshes.map((mesh) => {
+			const geometry = mesh.geometry.clone().applyMatrix4(mesh.matrixWorld);
+			// These untextured materials only need positions and normals. Canvas labels stay sprites.
+			for (const name of Object.keys(geometry.attributes))
+				if (name !== 'position' && name !== 'normal') geometry.deleteAttribute(name);
+			return geometry;
+		});
+		const geometry = mergeGeometries(geometries);
+		for (const item of geometries) item.dispose();
+		if (!geometry) continue;
+		const mesh = new THREE.Mesh(geometry, meshes[0].material);
+		mesh.castShadow = meshes[0].castShadow;
+		mesh.receiveShadow = meshes[0].receiveShadow;
+		for (const original of meshes) {
+			original.removeFromParent();
+			original.geometry.dispose();
+		}
+		group.add(mesh);
+	}
+	return group;
+}
+
+function createMarbleShadow() {
+	const size = 32;
+	const pixels = new Uint8Array(size * size * 4);
+	for (let y = 0; y < size; y += 1) {
+		for (let x = 0; x < size; x += 1) {
+			const radiusSquared = ((x - 15.5) / 15.5) ** 2 + ((y - 15.5) / 15.5) ** 2;
+			const index = (y * size + x) * 4;
+			pixels[index] = 255;
+			pixels[index + 1] = 255;
+			pixels[index + 2] = 255;
+			pixels[index + 3] = Math.round(Math.max(0, 1 - radiusSquared) ** 2 * 255);
+		}
+	}
+	const texture = new THREE.DataTexture(pixels, size, size);
+	texture.magFilter = THREE.LinearFilter;
+	texture.needsUpdate = true;
+	const shadow = new THREE.Mesh(
+		new THREE.PlaneGeometry(1, 1),
+		new THREE.MeshBasicMaterial({
+			color: '#365647',
+			map: texture,
+			transparent: true,
+			depthWrite: false,
+			opacity: 0.15,
+		}),
+	);
+	shadow.rotation.x = -Math.PI / 2;
+	return shadow;
 }
 
 /** A sampled tube preserves the authored takeoff and landing without spline overshoot. */
@@ -120,15 +185,21 @@ function numberLabel(text, color) {
 
 function createCourse(track) {
 	const group = new THREE.Group();
-	const metal = standard('#dae5e1', { metalness: 0.78, roughness: 0.23 });
+	const metal = standard('#819a90', { metalness: 0.72, roughness: 0.25 });
 	const underside = standard('#698f81', { metalness: 0.44, roughness: 0.4 });
-	const columns = standard('#99b7a7', { metalness: 0.3, roughness: 0.38 });
+	const columns = standard('#6f9683', { metalness: 0.3, roughness: 0.38 });
 	const feet = standard('#d3ded3', { metalness: 0.15 });
 	const brass = standard('#ddac68', { metalness: 0.65, roughness: 0.27 });
 	const chalk = standard('#faf7ed');
 	const dark = standard('#345d4f');
 	for (const span of railSpans(track)) {
-		for (const side of [-1, 1]) addMesh(group, railGeometry(span, side), metal);
+		const runupEnd = span.findIndex((point) => point.kind !== 'runup');
+		for (const side of [-1, 1]) {
+			if (runupEnd > 1) {
+				addMesh(group, railGeometry(span.slice(0, runupEnd), side), brass);
+				addMesh(group, railGeometry(span.slice(runupEnd - 1), side), metal);
+			} else addMesh(group, railGeometry(span, side), metal);
+		}
 	}
 	for (let distance = 0.1; distance < track.length; distance += 0.59) {
 		const point = sampleTrack(track, distance);
@@ -224,7 +295,7 @@ function createCourse(track) {
 			}
 		}
 	}
-	return group;
+	return batchStaticMeshes(group);
 }
 
 function createScenery() {
@@ -266,7 +337,7 @@ function createScenery() {
 	);
 	floor.rotation.x = -Math.PI / 2;
 	floor.castShadow = false;
-	return group;
+	return batchStaticMeshes(group);
 }
 
 function createWorld(container, initialConfig, emit) {
@@ -284,16 +355,19 @@ function createWorld(container, initialConfig, emit) {
 	canvas.style.height = '100%';
 	renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 	renderer.shadowMap.enabled = true;
+	renderer.shadowMap.autoUpdate = false;
+	renderer.shadowMap.needsUpdate = true;
 	renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 	renderer.toneMapping = THREE.ACESFilmicToneMapping;
-	renderer.toneMappingExposure = 1.12;
+	renderer.toneMappingExposure = 0.95;
 	const scene = new THREE.Scene();
 	scene.background = new THREE.Color('#e7eee5');
 	scene.fog = new THREE.Fog('#e7eee5', 38, 100);
 	const environment = new RoomEnvironment();
 	const generator = new THREE.PMREMGenerator(renderer);
-	const environmentMap = generator.fromScene(environment, 0.04);
+	const environmentMap = generator.fromScene(environment, 0.04, 0.1, 100, { size: 128 });
 	scene.environment = environmentMap.texture;
+	scene.environmentIntensity = 0.75;
 	environment.dispose();
 	generator.dispose();
 	const camera = new THREE.OrthographicCamera(-9, 9, 7, -7, 0.1, 140);
@@ -304,10 +378,10 @@ function createWorld(container, initialConfig, emit) {
 	controls.maxZoom = 1.7;
 	controls.minPolarAngle = 0.2;
 	controls.maxPolarAngle = 1.38;
-	const sunlight = new THREE.DirectionalLight('#fff5dc', 3.3);
+	const sunlight = new THREE.DirectionalLight('#fff5dc', 2.4);
 	sunlight.position.set(-4, 15, 8);
 	sunlight.castShadow = true;
-	sunlight.shadow.mapSize.set(2048, 2048);
+	sunlight.shadow.mapSize.set(1024, 1024);
 	sunlight.shadow.camera.left = -12;
 	sunlight.shadow.camera.right = 12;
 	sunlight.shadow.camera.top = 12;
@@ -316,8 +390,8 @@ function createWorld(container, initialConfig, emit) {
 	sunlight.shadow.normalBias = 0.028;
 	sunlight.shadow.bias = -0.00015;
 	sunlight.shadow.blurSamples = 8;
-	scene.add(sunlight, new THREE.HemisphereLight('#f4fbff', '#a1b796', 2.1));
-	const rim = new THREE.DirectionalLight('#d4e3ff', 1.5);
+	scene.add(sunlight, new THREE.HemisphereLight('#f4fbff', '#a1b796', 0.7));
+	const rim = new THREE.DirectionalLight('#d4e3ff', 0.7);
 	rim.position.set(5, 7, -9);
 	scene.add(rim, createScenery());
 	let config = normalizeConfig(initialConfig);
@@ -329,9 +403,9 @@ function createWorld(container, initialConfig, emit) {
 		color: COLORS[config.color],
 		metalness: 0,
 		roughness: 0.12,
-		transmission: 0.35,
-		thickness: 0.6,
-		ior: 1.5,
+		transparent: true,
+		opacity: 0.8,
+		depthWrite: false,
 		clearcoat: 1,
 		clearcoatRoughness: 0.08,
 		envMapIntensity: 1.5,
@@ -342,7 +416,12 @@ function createWorld(container, initialConfig, emit) {
 		const swirl = addMesh(marble, new THREE.TorusGeometry(0.23, 0.032, 10, 64), swirlMaterial);
 		swirl.rotation.set(0.5, angle, 0.4);
 	}
-	scene.add(marble);
+	// Keep the cached course shadow static; the marble gets a cheap moving soft shadow.
+	marble.traverse((object) => {
+		object.castShadow = false;
+	});
+	const marbleShadow = createMarbleShadow();
+	scene.add(marble, marbleShadow);
 	const media = window.matchMedia('(prefers-reduced-motion: reduce)');
 	let reducedMotion = media.matches;
 	let state = 'ready';
@@ -351,7 +430,7 @@ function createWorld(container, initialConfig, emit) {
 	let frame = 0;
 	let disposed = false;
 	let currentPoint = sampleRun(track, 0);
-	const target = new THREE.Vector3(0, 3.3, -0.55);
+	const target = new THREE.Vector3(0, 3.8, -0.55);
 	const followTarget = new THREE.Vector3();
 	const followPosition = new THREE.Vector3();
 	const lastMarblePosition = new THREE.Vector3();
@@ -367,6 +446,9 @@ function createWorld(container, initialConfig, emit) {
 			element.dataset.trackSignature = track.signature;
 			element.dataset.color = config.color;
 			element.dataset.duration = track.duration.toFixed(3);
+			element.dataset.speed = currentPoint.speed.toFixed(3);
+			element.dataset.segment = currentPoint.kind;
+			element.dataset.runupDuration = track.runup.duration.toFixed(3);
 			element.dataset.reducedMotion = String(reducedMotion);
 			element.dataset.airborne = String(currentPoint.airborne);
 		}
@@ -375,6 +457,8 @@ function createWorld(container, initialConfig, emit) {
 		if (disposed) return;
 		diagnostic();
 		renderer.render(scene, camera);
+		for (const element of new Set([container, canvas]))
+			element.dataset.drawCalls = String(renderer.info?.render.calls ?? 0);
 	};
 	const overview = () => {
 		camera.zoom = 1;
@@ -405,6 +489,10 @@ function createWorld(container, initialConfig, emit) {
 	const placeMarble = (immediate = false, delta = 0) => {
 		currentPoint = sampleRun(track, elapsed);
 		marble.position.set(currentPoint.x, currentPoint.y + MARBLE_LIFT, currentPoint.z);
+		marbleShadow.position.set(currentPoint.x, 0.012, currentPoint.z);
+		const shadowSize = 0.55 + currentPoint.y * 0.07;
+		marbleShadow.scale.set(shadowSize, shadowSize, 1);
+		marbleShadow.material.opacity = 0.18 / (1 + currentPoint.y * 0.18);
 		if (moved && !immediate) {
 			const movement = marble.position.clone().sub(lastMarblePosition);
 			axis.crossVectors(new THREE.Vector3(0, 1, 0), movement).normalize();
@@ -420,7 +508,8 @@ function createWorld(container, initialConfig, emit) {
 	const tick = (now) => {
 		frame = 0;
 		if (disposed || state !== 'running' || document.hidden) return;
-		const delta = lastTime ? Math.min(0.08, (now - lastTime) / 1000) : 0;
+		// The path is sampled by time, so low frame rates must not slow the whole run.
+		const delta = lastTime ? Math.max(0, (now - lastTime) / 1000) : 0;
 		lastTime = now;
 		elapsed = Math.min(track.duration, elapsed + delta);
 		placeMarble(false, delta);
@@ -446,10 +535,15 @@ function createWorld(container, initialConfig, emit) {
 		placeMarble(true);
 		render();
 	};
+	let lastWidth = 0;
+	let lastHeight = 0;
 	const resize = () => {
 		const { width, height } = container.getBoundingClientRect();
+		if (width === lastWidth && height === lastHeight) return;
+		lastWidth = width;
+		lastHeight = height;
 		const aspect = Math.max(1, width) / Math.max(1, height);
-		const viewHeight = Math.max(14.2, 15.5 / aspect);
+		const viewHeight = Math.max(15.8, 15.5 / aspect);
 		camera.left = (-viewHeight * aspect) / 2;
 		camera.right = (viewHeight * aspect) / 2;
 		camera.top = viewHeight / 2;
@@ -471,13 +565,13 @@ function createWorld(container, initialConfig, emit) {
 	};
 	const observer = new ResizeObserver(resize);
 	observer.observe(container);
-	controls.addEventListener('change', render);
 	document.addEventListener('visibilitychange', schedule);
 	media.addEventListener('change', motionChange);
 	canvas.addEventListener('webglcontextlost', contextLost);
 	overview();
 	placeMarble(true);
 	resize();
+	controls.addEventListener('change', render);
 	return {
 		launch() {
 			if (state === 'running' || state === 'error') return;
@@ -498,6 +592,7 @@ function createWorld(container, initialConfig, emit) {
 			track = buildTrack(config.segments);
 			course = createCourse(track);
 			scene.add(course);
+			renderer.shadowMap.needsUpdate = true;
 			glass.color.set(COLORS[config.color]);
 			if (config.camera === 'overview') overview();
 			reset();

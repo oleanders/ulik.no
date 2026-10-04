@@ -42,7 +42,7 @@ describe('interchangeable marble track geometry', () => {
 			for (const second of SEGMENT_TYPES) {
 				for (const third of SEGMENT_TYPES) {
 					const track = buildTrack([first, second, third]);
-					expect(track.points).toHaveLength(741);
+					expect(track.points).toHaveLength(841);
 					expect(track.duration).toBeGreaterThan(6);
 					for (let i = 0; i < track.points.length; i += 1) {
 						const point = track.points[i];
@@ -61,6 +61,53 @@ describe('interchangeable marble track geometry', () => {
 					expect(separation(sampleTrack(track, -10), track.points[0])).toBe(0);
 				}
 			}
+		}
+	});
+
+	it('every build starts near rest on the same fixed downhill run-up', () => {
+		const reference = buildTrack();
+		const referenceRunup = reference.points.slice(0, reference.runup.end + 1);
+		for (const first of SEGMENT_TYPES) {
+			const track = buildTrack([first, 'jump', 'spiral']);
+			expect(track.points.slice(0, track.runup.end + 1)).toEqual(referenceRunup);
+			expect(track.sections[0].start).toBe(track.runup.end);
+			expect(track.runup.duration).toBeGreaterThan(2.5);
+			expect(track.runup.length).toBeGreaterThan(4.5);
+			expect(sampleRun(track, 0).speed).toBeLessThan(0.3);
+			expect(sampleRun(track, 2).speed).toBeGreaterThan(1.5);
+			expect(track.points[track.runup.end].speed).toBeGreaterThan(2.4);
+			for (let index = 1; index <= track.runup.end; index += 1) {
+				expect(track.points[index].y).toBeLessThan(track.points[index - 1].y);
+				expect(track.points[index].speed).toBeGreaterThan(track.points[index - 1].speed);
+			}
+			const boundary = track.points[track.runup.end];
+			const before = sampleTrack(track, boundary.distance - 0.001);
+			const after = sampleTrack(track, boundary.distance + 0.001);
+			expect(separation(before.tangent, after.tangent)).toBeLessThan(0.02);
+		}
+	});
+
+	it('a first-slot jump receives a rolling entry and preserves speed and tangent at both gap edges', () => {
+		const track = buildTrack(['jump', 'sweep', 'spiral']);
+		const jump = track.sections[0];
+		const firstGap = track.points.find((point) => point.section === 0 && point.airborne);
+		const launch = track.points.find((point) => point.section === 0 && point.t === JUMP_START);
+		const landing = track.points.find((point) => point.section === 0 && point.t === JUMP_END);
+		const entry = track.points[jump.start];
+		const highestJump = Math.max(
+			...track.points.slice(jump.start, jump.end + 1).map((point) => point.y),
+		);
+		// Enough real descent precedes the jump to crest the ramp without inventing an energy boost.
+		expect(track.points[0].y).toBeGreaterThan(highestJump + 0.7);
+		expect(entry.speed).toBeGreaterThan(2.4);
+		expect(firstGap.time).toBeGreaterThan(track.runup.duration + 0.8);
+		expect(launch.speed).toBeGreaterThan(2.2);
+		expect(landing.speed).toBeGreaterThan(launch.speed);
+		for (const point of [launch, landing]) {
+			const before = sampleTrack(track, point.distance - 0.001);
+			const after = sampleTrack(track, point.distance + 0.001);
+			expect(Math.abs(before.speed - after.speed)).toBeLessThan(0.01);
+			expect(separation(before.tangent, after.tangent)).toBeLessThan(0.07);
 		}
 	});
 
