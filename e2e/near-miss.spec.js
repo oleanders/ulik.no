@@ -27,17 +27,19 @@ test('real geometry, repeated rounds, keyboard restart and navigation', async ({
 		await action.click();
 		await expect(game).toHaveAttribute('data-phase', 'missed');
 		await expect(game.getByRole('status')).toContainText('klaring');
-		await action.press('Enter');
+		await expect(action).toBeFocused();
+		await page.keyboard.press('Enter');
 		await expect(game).toHaveAttribute('data-phase', 'aiming');
 	}
 	await aim(page, true);
 	await action.click();
 	await expect(game).toHaveAttribute('data-phase', 'crashed');
 	await page.screenshot({ path: info.outputPath('near-miss-result.png'), fullPage: true });
-	await action.press('Space');
+	await expect(action).toBeFocused();
+	await page.keyboard.press('Space');
 	await expect(game).toHaveAttribute('data-phase', 'aiming');
 	await expect(game.locator('.near-miss-stats strong').first()).toHaveText('0');
-	await page.getByRole('link', { name: 'Alle prosjekter', exact: true }).click();
+	await page.getByRole('link', { name: /Alle prosjekter/ }).click();
 	await page.goBack();
 	await expect(game).toHaveAttribute('data-phase', 'aiming');
 	expect(errors).toEqual([]);
@@ -54,6 +56,7 @@ test('touch and reduced motion remain playable without overflow', async ({ brows
 	await page.goto('http://127.0.0.1:4173/projects/bom-feil');
 	await expect(page.locator('.near-miss-page')).toHaveAttribute('data-phase', 'aiming');
 	await page.screenshot({ path: info.outputPath('near-miss-mobile.png'), fullPage: true });
+	await expect(page.locator('.near-miss-page')).toHaveAttribute('data-reduced-motion', 'true');
 	await aim(page, true);
 	await page.locator('.near-miss-action').tap();
 	await expect(page.locator('.near-miss-page')).toHaveAttribute('data-phase', 'crashed');

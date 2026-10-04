@@ -2,9 +2,11 @@ module Pages.NearMiss exposing (Model, Msg(..), Phase(..), Shot, angle, gap, ini
 
 import Browser.Events
 import Html exposing (Html, button, div, h1, p, span, strong, text)
-import Html.Attributes exposing (attribute, class, disabled, type_)
+import Html.Attributes exposing (attribute, class, type_)
 import Html.Events exposing (onClick, preventDefaultOn)
 import Json.Decode as Decode
+import Json.Encode as Encode
+import Ports
 import Svg
 import Svg.Attributes as S
 
@@ -21,18 +23,19 @@ type alias Shot =
 
 
 type alias Model =
-    { phase : Phase, clock : Float, score : Int, round : Int, best : Int }
+    { phase : Phase, clock : Float, score : Int, round : Int, best : Int, reducedMotion : Bool }
 
 
 type Msg
     = Tick Float
     | Act
+    | Preferences Decode.Value
     | Ignore
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { phase = Aiming, clock = 0, score = 0, round = 1, best = 0 }, Cmd.none )
+    ( { phase = Aiming, clock = 0, score = 0, round = 1, best = 0, reducedMotion = False }, Ports.send (Encode.object [ ( "domain", Encode.string "nearMiss" ), ( "action", Encode.string "preferences" ) ]) )
 
 
 speed : Int -> Float
@@ -68,6 +71,14 @@ points distance =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     ( case msg of
+        Preferences value ->
+            case Decode.decodeValue (Decode.field "nearMissReducedMotion" Decode.bool) value of
+                Ok reduced ->
+                    { model | reducedMotion = reduced }
+
+                Err _ ->
+                    model
+
         Ignore ->
             model
 
@@ -81,7 +92,15 @@ update msg model =
                         shot =
                             { angle = direction, gap = gap direction, closest = 250 * cos direction - 120 * sin direction }
                     in
-                    { model | phase = Flying shot 0 }
+                    if model.reducedMotion then
+                        if shot.gap <= 0 then
+                            { model | phase = Crashed shot }
+
+                        else
+                            { model | phase = Missed shot, score = model.score + points shot.gap, best = max model.best (model.score + points shot.gap) }
+
+                    else
+                        { model | phase = Flying shot 0 }
 
                 Flying _ _ ->
                     model
@@ -137,6 +156,11 @@ update msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
+    Sub.batch [ Ports.receive Preferences, animation model ]
+
+
+animation : Model -> Sub Msg
+animation model =
     case model.phase of
         Aiming ->
             Browser.Events.onAnimationFrameDelta Tick
@@ -160,7 +184,7 @@ view model =
                     ( ( shot.angle, distance ), ( "På vei …", "", "flying" ) )
 
                 Missed shot ->
-                    ( ( shot.angle, shot.closest ), ( "Neste skudd", clearance shot.gap ++ " klaring · +" ++ String.fromInt (points shot.gap) ++ " poeng", "missed" ) )
+                    ( ( shot.angle, shot.closest + 85 ), ( "Neste skudd", clearance shot.gap ++ " klaring · +" ++ String.fromInt (points shot.gap) ++ " poeng", "missed" ) )
 
                 Crashed shot ->
                     ( ( shot.angle, shot.closest - sqrt (max 0 (35 ^ 2 - (shot.gap + 35) ^ 2)) ), ( "Prøv igjen", "Treff. Runde over. En liten bom er bedre!", "crashed" ) )
@@ -179,7 +203,17 @@ view model =
                 _ ->
                     False
     in
-    div [ class "near-miss-page", attribute "data-phase" status ]
+    div
+        [ class "near-miss-page"
+        , attribute "data-phase" status
+        , attribute "data-reduced-motion"
+            (if model.reducedMotion then
+                "true"
+
+             else
+                "false"
+            )
+        ]
         [ div [ class "near-miss-heading" ]
             [ p [ class "near-miss-eyebrow" ] [ text "ET LITE SPILL OM Å BOMME" ]
             , h1 [] [ text "bom", span [] [ text "≠" ], text "feil" ]
@@ -218,7 +252,13 @@ view model =
         , button
             [ class "near-miss-action"
             , type_ "button"
-            , disabled moving
+            , attribute "aria-disabled"
+                (if moving then
+                    "true"
+
+                 else
+                    "false"
+                )
             , onClick Act
             , preventDefaultOn "keydown"
                 (Decode.field "repeat" Decode.bool
@@ -234,7 +274,7 @@ view model =
             ]
             [ text label, span [ attribute "aria-hidden" "true" ] [ text " ↗" ] ]
         , p [ class "near-miss-help" ] [ text "Trykk knappen · eller Tab og mellomrom / Enter" ]
-        , p [ class "near-miss-rules" ] [ text "Den prikkede linjen er kulens bane. Poeng måles fra kant til kant ved nærmeste passering. Siktet blir litt raskere for hvert skudd. Ingen tidsfrist." ]
+        , p [ class "near-miss-rules" ] [ text "Den prikkede linjen er kulens bane. Poeng måles fra kant til kant ved nærmeste passering. Siktet blir litt raskere for hvert skudd. Ingen tidsfrist. Ved redusert bevegelse vises resultatet uten flytur; siktet beveger seg fordi timing er selve spillet." ]
         ]
 
 

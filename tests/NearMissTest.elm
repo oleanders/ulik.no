@@ -16,7 +16,24 @@ fire model =
 tests : Test
 tests =
     describe "Near miss geometry and game state"
-        [ test "direct aim intersects target" <| \_ -> Expect.within (Expect.Absolute 0.0001) -35 (Game.gap (atan2 -120 250))
+        [ test "reduced motion resolves without a flight animation" <|
+            \_ ->
+                let
+                    initial =
+                        Tuple.first Game.init
+
+                    result =
+                        Game.update Act { initial | reducedMotion = True } |> Tuple.first
+                in
+                Expect.equal True
+                    (case result.phase of
+                        Crashed _ ->
+                            True
+
+                        _ ->
+                            False
+                    )
+        , test "direct aim intersects target" <| \_ -> Expect.within (Expect.Absolute 0.0001) -35 (Game.gap (atan2 -120 250))
         , test "horizontal shot clears by 85" <| \_ -> Expect.within (Expect.Absolute 0.0001) 85 (Game.gap 0)
         , test "closer positive clearance earns more; a hit earns zero" <| \_ -> Expect.equal ( True, 0 ) ( Game.points 0.2 > Game.points 20, Game.points -1 )
         , test "difficulty increases but is capped" <| \_ -> Expect.equal ( True, 2.3 ) ( Game.speed 4 > Game.speed 1, Game.speed 100 )

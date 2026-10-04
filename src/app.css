@@ -174,14 +174,14 @@ select {
 	cursor: pointer;
 	touch-action: manipulation;
 }
-.near-miss-action:hover:not(:disabled) {
+.near-miss-action:hover:not([aria-disabled="true"]) {
 	background: #e4ffb5;
 }
 .near-miss-action:focus-visible {
 	outline: 3px solid white;
 	outline-offset: 4px;
 }
-.near-miss-action:disabled {
+.near-miss-action[aria-disabled="true"] {
 	opacity: 0.55;
 	cursor: default;
 }

@@ -140,7 +140,7 @@ viewHome model =
                 , p [ class "tagline" ] [ text "ulik alt annet." ]
                 , p [ class "description" ] [ text "Små eksperimenter. Rare ideer.", br [] [], text "Ting du kan prøve, ikke bare lese om." ]
                 , div [ class "actions" ] [ a [ class "primary", href "/projects/flyt-felt" ] [ text "Lek med flyt≠felt ", span [ attribute "aria-hidden" "true" ] [ text "→" ] ], surprise Nothing ]
-                , a [ class "catalog", href "/projects" ] [ text "Se alle 9 prosjekter ↓" ]
+                , a [ class "catalog", href "/projects" ] [ text ("Se alle " ++ String.fromInt (List.length Projects.all) ++ " prosjekter ↓") ]
                 ]
             , div [ class "home-preview" ]
                 [ div [ class "preview" ]
@@ -224,7 +224,7 @@ viewCatalog model =
                 )
                 [ All, Category Play, Category Art, Category Tools ]
             )
-        , p [ class "count", attribute "role" "status" ] [ text ("Viser " ++ String.fromInt (List.length visible) ++ " av 9 prosjekter") ]
+        , p [ class "count", attribute "role" "status" ] [ text ("Viser " ++ String.fromInt (List.length visible) ++ " av " ++ String.fromInt (List.length Projects.all) ++ " prosjekter") ]
         , section [ class "project-grid", attribute "aria-label" "Prosjekter" ] (List.map card visible)
         ]
 
