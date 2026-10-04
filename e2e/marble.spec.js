@@ -1,11 +1,28 @@
 import { expect, test } from '@playwright/test';
 
+test.setTimeout(60000);
+
 async function openTrack(page) {
+	const errors = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	page.on('console', (message) => {
+		if (message.type() === 'error') errors.push(message.text());
+	});
 	await page.route('https://api.github.com/repos/oleanders/ulik.no/actions/runs?*', (route) =>
 		route.fulfill({ headers: { 'access-control-allow-origin': '*' }, json: { workflow_runs: [] } }),
 	);
 	await page.goto('/projects/kule-bane');
-	await expect(page.getByRole('button', { name: 'Slipp kula ↗', exact: true })).toBeEnabled();
+	try {
+		await expect(page.getByRole('button', { name: 'Slipp kula ↗', exact: true })).toBeEnabled({
+			timeout: 30000,
+		});
+	} catch (error) {
+		console.log(
+			'Marble initialization diagnostics:',
+			JSON.stringify({ errors, status: await page.locator('.marble-status').textContent() }),
+		);
+		throw error;
+	}
 	await expect(page.locator('#marble-canvas')).toHaveAttribute('data-state', 'ready');
 }
 

@@ -403,6 +403,7 @@ test('NATO preserves setup bounds, speech language, scoring, replay and cancella
 	expect(await page.evaluate(() => window.__speech.calls[1].voice.voiceURI)).toBe('test-british');
 	await page.evaluate(() => window.__speech.finish());
 	await page.getByRole('button', { name: 'Vis ord', exact: true }).click();
+	await expect(page.getByLabel('Ord i runden').locator('.round-word')).toHaveCount(2);
 	const words = await page.getByLabel('Ord i runden').locator('.round-word').allTextContents();
 	expect(words).toHaveLength(2);
 	expect(await page.evaluate(() => window.__speech.calls[1].text)).toBe(words.join(' '));
