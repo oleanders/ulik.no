@@ -99,3 +99,111 @@ select {
 		padding: 1rem;
 	}
 }
+
+/* Bom ≠ feil: a quiet, one-button timing game. */
+.near-miss-page {
+	width: min(100%, 540px);
+	margin: 0 auto;
+	padding: 36px 22px 48px;
+	color: #ecf4e5;
+}
+.near-miss-heading h1 {
+	margin: 10px 0;
+	font-size: clamp(2.8rem, 10vw, 4.5rem);
+	letter-spacing: -0.08em;
+	line-height: 1.1;
+}
+.near-miss-heading span {
+	color: #d7ff91;
+	padding: 0 0.07em;
+}
+.near-miss-heading p {
+	font-size: 0.82rem;
+	color: #a6b7a7;
+}
+.near-miss-heading .near-miss-eyebrow {
+	font-size: 0.62rem;
+	letter-spacing: 0.19em;
+	color: #d7ff91;
+}
+.near-miss-stats {
+	display: flex;
+	justify-content: space-between;
+	padding: 22px 0 12px;
+	border-bottom: 1px solid #293629;
+}
+.near-miss-stats span {
+	display: block;
+	font-size: 0.59rem;
+	letter-spacing: 0.13em;
+	color: #99a892;
+}
+.near-miss-stats strong {
+	display: block;
+	font-size: 1.8rem;
+	font-weight: 400;
+	font-variant-numeric: tabular-nums;
+}
+.near-miss-arena {
+	background: #111811;
+	border-radius: 0 0 18px 18px;
+	overflow: hidden;
+}
+.near-miss-arena svg {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-height: 40vh;
+}
+.near-miss-result {
+	min-height: 2.5em;
+	margin: 20px 0 12px;
+	text-align: center;
+	font-size: 0.85rem;
+	color: #d7ff91;
+}
+.near-miss-action {
+	width: 100%;
+	min-height: 58px;
+	border: 1px solid #d7ff91;
+	border-radius: 10px;
+	background: #d7ff91;
+	color: #142016;
+	font: inherit;
+	font-weight: 700;
+	cursor: pointer;
+	touch-action: manipulation;
+}
+.near-miss-action:hover:not([aria-disabled="true"]) {
+	background: #e4ffb5;
+}
+.near-miss-action:focus-visible {
+	outline: 3px solid white;
+	outline-offset: 4px;
+}
+.near-miss-action[aria-disabled="true"] {
+	opacity: 0.55;
+	cursor: default;
+}
+.near-miss-help {
+	text-align: center;
+	color: #a6b7a7;
+	font-size: 0.62rem;
+}
+.near-miss-rules {
+	margin-top: 28px;
+	font-size: 0.7rem;
+	line-height: 1.8;
+	color: #a6b7a7;
+}
+@media (max-width: 450px) {
+	.near-miss-page {
+		padding: 20px 16px 32px;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.near-miss-page * {
+		animation: none;
+		transition: none;
+	}
+}

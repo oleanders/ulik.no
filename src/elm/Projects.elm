@@ -11,6 +11,7 @@ type Id
     | Diff
     | Screen
     | Morse
+    | NearMiss
 
 
 type Category
@@ -38,7 +39,8 @@ type alias Project =
 
 all : List Project
 all =
-    [ { id = Illusion
+    [ { id = NearMiss, category = Play, hook = "Bom så vidt du kan.", interaction = "Ett trykk · presisjon", title = "bom≠feil", description = "Skyt forbi. Jo nærmere du bommer, desto mer får du. Treffer du, er runden over.", tags = [ "spill", "presisjon", "ett trykk" ], status = Active }
+    , { id = Illusion
       , category = Art
       , hook = "Ser ulikt ut. Er helt likt."
       , interaction = "Se · dra · avslør"
@@ -125,6 +127,9 @@ all =
 slug : Id -> String
 slug id =
     case id of
+        NearMiss ->
+            "bom-feil"
+
         Illusion ->
             "lik-lik"
 

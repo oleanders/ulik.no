@@ -55,6 +55,12 @@ app.ports.send.subscribe((command) => {
 		});
 		return;
 	}
+	if (command.domain === 'nearMiss') {
+		app.ports.receive.send({
+			nearMissReducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+		});
+		return;
+	}
 	if (command.domain === 'robot') {
 		const revision = routeRevision;
 		import('./browser/robot.js').then((module) => {

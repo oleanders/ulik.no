@@ -10,6 +10,7 @@ const routes = [
 	'/om',
 	'/projects',
 	...[
+		'bom-feil',
 		'lik-lik',
 		'robot-tohjul',
 		'fall-haug',
