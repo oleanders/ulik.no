@@ -18,6 +18,10 @@ test('real geometry, repeated rounds, keyboard restart and navigation', async ({
 	const errors = [];
 	page.on('pageerror', (error) => errors.push(error.message));
 	await page.goto('/projects/bom-feil');
+	await expect(page.locator('script[src^="/elm.js"]')).toHaveAttribute(
+		'src',
+		/^\/elm\.js\?v=[a-f0-9]{16}$/,
+	);
 	const game = page.locator('.near-miss-page');
 	const action = page.locator('.near-miss-action');
 	await expect(game).toHaveAttribute('data-phase', 'aiming');
