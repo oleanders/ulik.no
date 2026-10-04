@@ -726,7 +726,7 @@ test('all migrated routes survive repeated back/forward and unknown routes offer
 		await expect(page.getByRole('heading', { name: 'Fant ikke siden', exact: true })).toBeVisible();
 		await page.getByRole('link', { name: 'Se alle prosjekter', exact: true }).click();
 		await expect(page).toHaveURL(/\/projects$/);
-		await expect(page.getByRole('status')).toContainText('Viser 9 av 9');
+		await expect(page.getByRole('status')).toContainText('Viser 10 av 10');
 	}
 });
 

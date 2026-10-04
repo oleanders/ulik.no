@@ -26,15 +26,15 @@ test('homepage invites discovery with an interactive preview and selected projec
 });
 test('catalog filters and resets without losing project links', async ({ page }) => {
 	await page.goto('/projects');
-	await expect(page.getByRole('status')).toContainText('Viser 9 av 9');
+	await expect(page.getByRole('status')).toContainText('Viser 10 av 10');
 	await page.getByRole('button', { name: 'Generativ kunst' }).click();
 	await expect(page.getByRole('heading', { name: 'flyt≠felt' })).toBeVisible();
-	await expect(page.getByRole('status')).toContainText('Viser 2 av 9');
+	await expect(page.getByRole('status')).toContainText('Viser 2 av 10');
 	await page.getByRole('button', { name: 'Små verktøy' }).press('Enter');
 	await expect(page.getByRole('heading', { name: 'prompt≠lab' })).toBeVisible();
-	await expect(page.getByRole('status')).toContainText('Viser 3 av 9');
+	await expect(page.getByRole('status')).toContainText('Viser 3 av 10');
 	await page.getByRole('button', { name: 'Alle', exact: true }).click();
-	await expect(page.getByRole('status')).toContainText('Viser 9 av 9');
+	await expect(page.getByRole('status')).toContainText('Viser 10 av 10');
 });
 test('project pages offer active onward routes and catalog navigation', async ({ page }) => {
 	await page.goto('/projects/prompt-lab');

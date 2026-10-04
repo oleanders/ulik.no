@@ -14,6 +14,7 @@ import Pages.Flow as Flow
 import Pages.Illusions as Illusions
 import Pages.Morse as Morse
 import Pages.Nato as Nato
+import Pages.NearMiss as NearMiss
 import Pages.Robot as Robot
 import Pages.Screen as Screen
 import Ports
@@ -43,6 +44,7 @@ type Page
     | DiffPage Diff.Model
     | ScreenPage Screen.Model
     | IllusionsPage Illusions.Model
+    | NearMissPage NearMiss.Model
 
 
 type alias Flags =
@@ -75,6 +77,7 @@ type Msg
     | DiffMsg Diff.Msg
     | ScreenMsg Screen.Msg
     | IllusionsMsg Illusions.Msg
+    | NearMissMsg NearMiss.Msg
 
 
 main : Program Flags Model Msg
@@ -154,6 +157,9 @@ initPage route url =
 
         Project id subpage ->
             case id of
+                Projects.NearMiss ->
+                    NearMiss.init |> Tuple.mapBoth NearMissPage (Cmd.map NearMissMsg)
+
                 Projects.Prompt ->
                     ( PlaceholderPage, Cmd.none )
 
@@ -284,6 +290,13 @@ update msg model =
             in
             ( { model | page = ScreenPage page }, Cmd.map ScreenMsg cmd )
 
+        ( NearMissMsg childMsg, NearMissPage childModel ) ->
+            let
+                ( page, cmd ) =
+                    NearMiss.update childMsg childModel
+            in
+            ( { model | page = NearMissPage page }, Cmd.map NearMissMsg cmd )
+
         ( IllusionsMsg childMsg, IllusionsPage childModel ) ->
             let
                 ( page, cmd ) =
@@ -322,6 +335,9 @@ subscriptions model =
 
             ScreenPage page ->
                 Sub.map ScreenMsg (Screen.subscriptions page)
+
+            NearMissPage page ->
+                Sub.map NearMissMsg (NearMiss.subscriptions page)
 
             IllusionsPage page ->
                 Sub.map IllusionsMsg (Illusions.subscriptions page)
@@ -428,6 +444,9 @@ viewPage model =
 
         ScreenPage page ->
             Html.map ScreenMsg (Screen.view page)
+
+        NearMissPage page ->
+            Html.map NearMissMsg (NearMiss.view page)
 
         IllusionsPage page ->
             Html.map IllusionsMsg (Illusions.view page)

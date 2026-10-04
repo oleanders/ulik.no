@@ -9,9 +9,9 @@ import Test exposing (Test, describe, test)
 tests : Test
 tests =
     describe "Project discovery"
-        [ test "all nine projects have unique routable identifiers" <|
+        [ test "all ten projects have unique routable identifiers" <|
             \_ ->
-                Expect.equal 9 (Projects.all |> List.map (.id >> Projects.slug) |> Set.fromList |> Set.size)
+                Expect.equal 10 (Projects.all |> List.map (.id >> Projects.slug) |> Set.fromList |> Set.size)
         , test "slugs round-trip through routing" <|
             \_ ->
                 Projects.all |> List.all (\project -> Projects.fromSlug (Projects.slug project.id) == Just project.id) |> Expect.equal True
