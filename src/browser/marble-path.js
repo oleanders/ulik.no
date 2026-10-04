@@ -157,9 +157,73 @@ export function buildTrack(segments = DEFAULT_SEGMENTS) {
 			heading += TURN_ANGLE;
 		}
 	}
+	const finish = {
+		index: points.length - 1,
+		distance: points.at(-1).distance,
+		time: points.at(-1).time,
+	};
+	// A fixed, gently upturned run-out carries the ball clear of the deck after the finish gate.
+	const runoutLength = 2.6;
+	const runoutTurn = (-Math.PI * 4) / 9;
+	const runoutRadius = runoutLength / runoutTurn;
+	const runoutOrigin = { ...points.at(-1) };
+	for (let index = 1; index <= 80; index += 1) {
+		const t = index / 80;
+		add(
+			transform(
+				{
+					x: runoutRadius * Math.sin(runoutTurn * t),
+					y: hermite(0, -0.16, -DROP / LENGTH, 0.16, t, runoutLength),
+					z: runoutRadius * (1 - Math.cos(runoutTurn * t)),
+				},
+				runoutOrigin,
+				heading,
+			),
+			-1,
+			'runout',
+			t,
+		);
+	}
+	// Anticipate tight horizontal bends with bounded acceleration and braking.
+	for (let index = 1; index < points.length - 1; index += 1) {
+		const a = points[index - 1];
+		const b = points[index];
+		const c = points[index + 1];
+		if (b.airborne) continue;
+		const before = Math.atan2(b.z - a.z, b.x - a.x);
+		const after = Math.atan2(c.z - b.z, c.x - b.x);
+		const turn = Math.abs(Math.atan2(Math.sin(after - before), Math.cos(after - before)));
+		const curvature = turn / Math.max(0.001, (distance(a, b) + distance(b, c)) / 2);
+		b.speed = Math.min(b.speed, Math.sqrt(6.5 / Math.max(0.001, curvature)));
+	}
+	for (let index = points.length - 2; index > 0; index -= 1) {
+		const point = points[index];
+		const next = points[index + 1];
+		point.speed = Math.min(
+			point.speed,
+			Math.sqrt(next.speed ** 2 + 2 * 2.4 * (next.distance - point.distance)),
+		);
+	}
+	for (let index = 1; index < points.length; index += 1) {
+		const point = points[index];
+		const previous = points[index - 1];
+		const step = point.distance - previous.distance;
+		// Speed lost in a bend is not magically restored: only the next descent supplies energy.
+		const gravitySpeed = Math.sqrt(
+			Math.max(0.25 ** 2, previous.speed ** 2 + 6 * (previous.y - point.y)),
+		);
+		point.speed = Math.min(
+			point.speed,
+			gravitySpeed,
+			Math.sqrt(previous.speed ** 2 + 2 * 2.5 * step),
+		);
+		point.time = previous.time + (2 * step) / (previous.speed + point.speed);
+	}
+	runup.duration = points[runup.end].time;
+	finish.time = points[finish.index].time;
 	const length = points.at(-1).distance;
 	const duration = points.at(-1).time;
-	return { points, sections, runup, length, duration, signature: kinds.join('-') };
+	return { points, sections, runup, finish, length, duration, signature: kinds.join('-') };
 }
 
 function sampleBy(track, value, key) {
@@ -174,7 +238,26 @@ function sampleBy(track, value, key) {
 	}
 	const a = points[low];
 	const b = points[high];
-	const t = (target - a[key]) / Math.max(1e-12, b[key] - a[key]);
+	const intervalTime = b.time - a.time;
+	const intervalDistance = b.distance - a.distance;
+	const fraction = (target - a[key]) / Math.max(1e-12, b[key] - a[key]);
+	const acceleration = (b.speed - a.speed) / intervalTime;
+	const localTime =
+		key === 'time'
+			? target - a.time
+			: (2 * (target - a.distance)) /
+				(a.speed + Math.sqrt(Math.max(0, a.speed ** 2 + 2 * acceleration * (target - a.distance))));
+	const timeFraction = clamp(localTime / intervalTime, 0, 1);
+	const t =
+		target === b[key]
+			? 1
+			: key === 'time'
+				? clamp(
+						(a.speed * localTime + 0.5 * acceleration * localTime ** 2) / intervalDistance,
+						0,
+						1,
+					)
+				: fraction;
 	const directionAt = (index) => {
 		const before = points[Math.max(0, index - 1)];
 		const after = points[Math.min(points.length - 1, index + 1)];
@@ -194,9 +277,9 @@ function sampleBy(track, value, key) {
 		y: lerp(a.y, b.y, t),
 		z: lerp(a.z, b.z, t),
 		distance: lerp(a.distance, b.distance, t),
-		time: lerp(a.time, b.time, t),
+		time: a.time + localTime,
 		progress: lerp(a.distance, b.distance, t) / track.length,
-		speed: lerp(a.speed, b.speed, t),
+		speed: lerp(a.speed, b.speed, timeFraction),
 		kind: t === 1 ? b.kind : a.kind,
 		section: t === 1 ? b.section : a.section,
 		airborne: t === 0 ? a.airborne : t === 1 ? b.airborne : a.airborne || b.airborne,

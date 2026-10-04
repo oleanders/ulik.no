@@ -191,3 +191,97 @@ test('a first-slot jump has a downhill run-up and visibly builds speed before ta
 		fullPage: true,
 	});
 });
+
+test.describe('natural rolling and finish exit', () => {
+	test.use({
+		video: { mode: 'on', size: { width: 1100, height: 900 } },
+		viewport: { width: 1100, height: 900 },
+	});
+
+	test('rolling stays visible through the finish, falls away, disappears and replays', async ({
+		page,
+	}, testInfo) => {
+		await openTrack(page);
+		const canvas = page.locator('#marble-canvas');
+		await page.getByRole('button', { name: 'Følg kula', exact: true }).click();
+		const bounds = await canvas.boundingBox();
+		const width = bounds.width * 0.88;
+		const height = width / 2.25;
+		await page.screenshot({
+			path: testInfo.outputPath('marble-card-start.png'),
+			clip: {
+				x: bounds.x + (bounds.width - width) / 2,
+				y: bounds.y + (bounds.height - height) / 2,
+				width,
+				height,
+			},
+		});
+		await canvas.evaluate((element) => {
+			window.__marbleMotionFrames = [];
+			const observer = new MutationObserver(() => {
+				window.__marbleMotionFrames.push({
+					at: performance.now(),
+					phase: element.dataset.phase,
+					position: element.dataset.position,
+					rotation: element.dataset.rotation,
+					visible: element.dataset.visible,
+					speed: Number(element.dataset.speed),
+					state: element.dataset.state,
+				});
+				if (element.dataset.phase === 'gone') observer.disconnect();
+			});
+			observer.observe(element, {
+				attributes: true,
+				attributeFilter: ['data-position', 'data-phase'],
+			});
+		});
+		await page.getByRole('button', { name: 'Slipp kula ↗', exact: true }).click();
+		await expect(page.getByText('I mål! En runde til?')).toBeVisible({ timeout: 45000 });
+		const frames = await page.evaluate(() => window.__marbleMotionFrames);
+		await testInfo.attach('marble-motion-frames.json', {
+			body: JSON.stringify(frames, null, 2),
+			contentType: 'application/json',
+		});
+		const rolling = frames.filter((frame) => frame.phase === 'track' && frame.state === 'running');
+		const falling = frames.filter((frame) => frame.phase === 'falling');
+		expect(rolling.length).toBeGreaterThan(5);
+		expect(new Set(rolling.map((frame) => frame.rotation)).size).toBeGreaterThan(5);
+		expect(falling.length).toBeGreaterThan(1);
+		expect(falling.every((frame) => frame.state === 'running' && frame.visible === 'true')).toBe(
+			true,
+		);
+		expect(falling[0].speed).toBeGreaterThan(1);
+		const positions = falling.map((frame) => frame.position.split(',').map(Number));
+		expect(
+			Math.hypot(...positions.at(-1).map((value, index) => value - positions[0][index])),
+		).toBeGreaterThan(1);
+		await expect(canvas).toHaveAttribute('data-phase', 'gone');
+		await expect(canvas).toHaveAttribute('data-visible', 'false');
+		await page.screenshot({ path: testInfo.outputPath('marble-after-fall.png'), fullPage: true });
+		await page.getByRole('button', { name: 'Slipp igjen ↗', exact: true }).click();
+		await expect(canvas).toHaveAttribute('data-visible', 'true');
+		await page.getByRole('button', { name: 'Til start', exact: true }).click();
+		await expect(canvas).toHaveAttribute('data-phase', 'track');
+		await expect(canvas).toHaveAttribute('data-state', 'ready');
+	});
+
+	test('reset during the fall restores a motionless marble and a new run works', async ({
+		page,
+	}) => {
+		await page.emulateMedia({ reducedMotion: 'reduce' });
+		await openTrack(page);
+		const canvas = page.locator('#marble-canvas');
+		await page.getByRole('button', { name: 'Slipp kula ↗', exact: true }).click();
+		await expect(canvas).toHaveAttribute('data-phase', 'falling', { timeout: 45000 });
+		await page.getByRole('button', { name: 'Til start', exact: true }).click();
+		await expect(canvas).toHaveAttribute('data-state', 'ready');
+		await expect(canvas).toHaveAttribute('data-phase', 'track');
+		await expect(canvas).toHaveAttribute('data-visible', 'true');
+		const position = await canvas.getAttribute('data-position');
+		await page.waitForTimeout(400);
+		await expect(canvas).toHaveAttribute('data-position', position);
+		await page.getByRole('button', { name: 'Slipp kula ↗', exact: true }).click();
+		await expect(page.getByText('I mål! En runde til?')).toBeVisible({ timeout: 45000 });
+		await expect(canvas).toHaveAttribute('data-visible', 'false');
+	});
+});

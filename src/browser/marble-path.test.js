@@ -42,7 +42,7 @@ describe('interchangeable marble track geometry', () => {
 			for (const second of SEGMENT_TYPES) {
 				for (const third of SEGMENT_TYPES) {
 					const track = buildTrack([first, second, third]);
-					expect(track.points).toHaveLength(841);
+					expect(track.points).toHaveLength(921);
 					expect(track.duration).toBeGreaterThan(6);
 					for (let i = 0; i < track.points.length; i += 1) {
 						const point = track.points[i];

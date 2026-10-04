@@ -2,15 +2,14 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { buildMotion, sampleMotion } from './marble-motion.js';
 import {
 	buildTrack,
-	MARBLE_LIFT,
 	MARBLE_RADIUS,
 	normalizeConfig,
 	RAIL_HALF_WIDTH,
 	RAIL_RADIUS,
 	railSpans,
-	sampleRun,
 	sampleTrack,
 } from './marble-path.js';
 
@@ -210,7 +209,7 @@ function createCourse(track) {
 	}
 	for (let distance = 0.25; distance < track.length; distance += 2.65) {
 		const point = sampleTrack(track, distance);
-		if (point.airborne) continue;
+		if (point.airborne || Math.hypot(point.x, point.z + 0.6) > 7.15) continue;
 		// A high support must not pass through another, lower part of the run.
 		const crossesLowerTrack = track.points.some(
 			(other) => other.y < point.y - 0.5 && Math.hypot(other.x - point.x, other.z - point.z) < 0.43,
@@ -243,7 +242,7 @@ function createCourse(track) {
 		group.add(label);
 	}
 	const start = sampleTrack(track, 0);
-	const finish = sampleTrack(track, track.length);
+	const finish = sampleTrack(track, track.finish.distance);
 	for (const [point, isFinish] of [
 		[start, false],
 		[finish, true],
@@ -334,6 +333,37 @@ function createScenery() {
 	return batchStaticMeshes(group);
 }
 
+/** Asymmetric ribbons sit on the shell, so rotation is readable even at overview scale. */
+function marbleRibbon(phase, width) {
+	const positions = [];
+	const normals = [];
+	const indices = [];
+	const radius = MARBLE_RADIUS + 0.002;
+	for (let index = 0; index <= 80; index += 1) {
+		const t = index / 80;
+		const polar = (0.1 + 0.79 * t) * Math.PI;
+		const azimuth = phase + 4.9 * t + 0.28 * Math.sin(t * Math.PI * 3);
+		const breadth = width * Math.sin(Math.PI * t) ** 0.6;
+		for (const side of [-1, 1]) {
+			const angle = azimuth + side * breadth;
+			const x = Math.sin(polar) * Math.cos(angle);
+			const y = Math.cos(polar);
+			const z = Math.sin(polar) * Math.sin(angle);
+			positions.push(x * radius, y * radius, z * radius);
+			normals.push(x, y, z);
+		}
+		if (index < 80) {
+			const a = index * 2;
+			indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+		}
+	}
+	const geometry = new THREE.BufferGeometry();
+	geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+	geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+	geometry.setIndex(indices);
+	return geometry;
+}
+
 function createWorld(container, initialConfig, emit) {
 	const existingCanvas = container instanceof HTMLCanvasElement;
 	const renderer = new THREE.WebGLRenderer({
@@ -390,6 +420,7 @@ function createWorld(container, initialConfig, emit) {
 	scene.add(rim, createScenery());
 	let config = normalizeConfig(initialConfig);
 	let track = buildTrack(config.segments);
+	let motion = buildMotion(track);
 	let course = createCourse(track);
 	scene.add(course);
 	const marble = new THREE.Group();
@@ -405,11 +436,26 @@ function createWorld(container, initialConfig, emit) {
 		envMapIntensity: 1.5,
 	});
 	addMesh(marble, new THREE.SphereGeometry(MARBLE_RADIUS, 40, 28), glass);
-	const swirlMaterial = standard('#fff6d5', { metalness: 0.18, roughness: 0.2 });
-	for (const angle of [0, Math.PI / 2]) {
-		const swirl = addMesh(marble, new THREE.TorusGeometry(0.23, 0.032, 10, 64), swirlMaterial);
-		swirl.rotation.set(0.5, angle, 0.4);
-	}
+	const swirlMaterial = standard('#fff4ca', {
+		metalness: 0.12,
+		roughness: 0.22,
+		transparent: true,
+		opacity: 0.96,
+		depthWrite: false,
+	});
+	const accentMaterial = standard('#325e50', {
+		metalness: 0.12,
+		roughness: 0.24,
+		transparent: true,
+		opacity: 0.88,
+		depthWrite: false,
+	});
+	addMesh(marble, marbleRibbon(0.3, 0.27), swirlMaterial).renderOrder = 2;
+	addMesh(marble, marbleRibbon(2.7, 0.095), accentMaterial).renderOrder = 2;
+	const marbleMaterials = [glass, swirlMaterial, accentMaterial].map((material) => ({
+		material,
+		opacity: material.opacity,
+	}));
 	// Keep the cached course shadow static; the marble gets a cheap moving soft shadow.
 	marble.traverse((object) => {
 		object.castShadow = false;
@@ -423,14 +469,11 @@ function createWorld(container, initialConfig, emit) {
 	let lastTime = 0;
 	let frame = 0;
 	let disposed = false;
-	let currentPoint = sampleRun(track, 0);
+	let currentPoint = sampleMotion(motion, 0);
 	const target = new THREE.Vector3(0, 3.8, -0.55);
 	const followTarget = new THREE.Vector3();
 	const followPosition = new THREE.Vector3();
-	const lastMarblePosition = new THREE.Vector3();
-	const axis = new THREE.Vector3();
-	const rotation = new THREE.Quaternion();
-	let moved = false;
+
 	const diagnostic = () => {
 		for (const element of new Set([container, canvas])) {
 			element.dataset.state = state;
@@ -440,6 +483,20 @@ function createWorld(container, initialConfig, emit) {
 			element.dataset.trackSignature = track.signature;
 			element.dataset.color = config.color;
 			element.dataset.duration = track.duration.toFixed(3);
+			element.dataset.totalDuration = motion.duration.toFixed(3);
+			element.dataset.phase = currentPoint.phase;
+			element.dataset.visible = String(currentPoint.visible);
+			element.dataset.position = [marble.position.x, marble.position.y, marble.position.z]
+				.map((value) => value.toFixed(5))
+				.join(',');
+			element.dataset.rotation = [
+				marble.quaternion.x,
+				marble.quaternion.y,
+				marble.quaternion.z,
+				marble.quaternion.w,
+			]
+				.map((value) => value.toFixed(6))
+				.join(',');
 			element.dataset.speed = currentPoint.speed.toFixed(3);
 			element.dataset.segment = currentPoint.kind;
 			element.dataset.runupDuration = track.runup.duration.toFixed(3);
@@ -468,9 +525,16 @@ function createWorld(container, initialConfig, emit) {
 		const tangent = vec(currentPoint.tangent);
 		tangent.y = 0;
 		tangent.normalize();
-		followTarget.copy(marble.position).addScaledVector(tangent, 0.5);
+		const anchor =
+			currentPoint.phase === 'track'
+				? marble.position.clone()
+				: vec(motion.end)
+						.add(new THREE.Vector3(0, 0.3, 0))
+						.addScaledVector(tangent, Math.min(elapsed - track.duration, 0.25) * motion.end.speed);
+		anchor.y = Math.max(0.9, anchor.y);
+		followTarget.copy(anchor).addScaledVector(tangent, 0.5);
 		followPosition
-			.copy(marble.position)
+			.copy(anchor)
 			.addScaledVector(tangent, -5.3)
 			.add(new THREE.Vector3(2.6, 4, 2.6));
 		const amount = immediate || reducedMotion ? 1 : 1 - Math.exp(-delta * 3.2);
@@ -481,22 +545,19 @@ function createWorld(container, initialConfig, emit) {
 		camera.updateProjectionMatrix();
 	};
 	const placeMarble = (immediate = false, delta = 0) => {
-		currentPoint = sampleRun(track, elapsed);
-		marble.position.set(currentPoint.x, currentPoint.y + MARBLE_LIFT, currentPoint.z);
-		marbleShadow.position.set(currentPoint.x, 0.012, currentPoint.z);
-		const shadowSize = 0.55 + currentPoint.y * 0.07;
+		currentPoint = sampleMotion(motion, elapsed);
+		marble.position.copy(vec(currentPoint.position));
+		const { x, y, z, w } = currentPoint.rotation;
+		marble.quaternion.set(x, y, z, w);
+		marble.visible = currentPoint.visible;
+		for (const item of marbleMaterials) item.material.opacity = item.opacity * currentPoint.opacity;
+		marbleShadow.position.set(marble.position.x, 0.012, marble.position.z);
+		marbleShadow.visible =
+			currentPoint.visible && Math.hypot(marble.position.x, marble.position.z + 0.6) < 7.3;
+		const height = Math.max(0, marble.position.y);
+		const shadowSize = 0.55 + height * 0.07;
 		marbleShadow.scale.set(shadowSize, shadowSize, 1);
-		marbleShadow.material.opacity = 0.18 / (1 + currentPoint.y * 0.18);
-		if (moved && !immediate) {
-			const movement = marble.position.clone().sub(lastMarblePosition);
-			axis.crossVectors(new THREE.Vector3(0, 1, 0), movement).normalize();
-			if (movement.lengthSq() > 1e-12) {
-				rotation.setFromAxisAngle(axis, movement.length() / MARBLE_RADIUS);
-				marble.quaternion.premultiply(rotation);
-			}
-		} else marble.quaternion.identity();
-		lastMarblePosition.copy(marble.position);
-		moved = true;
+		marbleShadow.material.opacity = (0.18 / (1 + height * 0.18)) * currentPoint.opacity;
 		updateCamera(immediate, delta);
 	};
 	const tick = (now) => {
@@ -505,9 +566,9 @@ function createWorld(container, initialConfig, emit) {
 		// The path is sampled by time, so low frame rates must not slow the whole run.
 		const delta = lastTime ? Math.max(0, (now - lastTime) / 1000) : 0;
 		lastTime = now;
-		elapsed = Math.min(track.duration, elapsed + delta);
+		elapsed = Math.min(motion.duration, elapsed + delta);
 		placeMarble(false, delta);
-		if (elapsed >= track.duration) {
+		if (currentPoint.phase === 'gone') {
 			state = 'finished';
 			render();
 			emit('finished');
@@ -584,6 +645,7 @@ function createWorld(container, initialConfig, emit) {
 			scene.remove(course);
 			releaseTree(course);
 			track = buildTrack(config.segments);
+			motion = buildMotion(track);
 			course = createCourse(track);
 			scene.add(course);
 			renderer.shadowMap.needsUpdate = true;
