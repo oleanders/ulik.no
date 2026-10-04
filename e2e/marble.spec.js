@@ -161,6 +161,17 @@ test('a first-slot jump has a downhill run-up and visibly builds speed before ta
 	await expect(canvas).toHaveAttribute('data-segment', 'runup');
 	const releaseSpeed = Number(await canvas.getAttribute('data-speed'));
 	expect(releaseSpeed).toBeLessThan(0.5);
+	await canvas.evaluate((element) => {
+		window.__marbleFlightSeen = false;
+		const observer = new MutationObserver(() => {
+			if (element.dataset.airborne === 'true') window.__marbleFlightSeen = true;
+			if (element.dataset.state === 'finished') observer.disconnect();
+		});
+		observer.observe(element, {
+			attributes: true,
+			attributeFilter: ['data-airborne', 'data-state'],
+		});
+	});
 	await page.getByRole('button', { name: 'Slipp kula ↗', exact: true }).click();
 	await expect
 		.poll(async () => Number(await canvas.getAttribute('data-speed')))
@@ -170,11 +181,13 @@ test('a first-slot jump has a downhill run-up and visibly builds speed before ta
 		path: testInfo.outputPath('marble-jump-first-runup.png'),
 		fullPage: true,
 	});
-	await expect(canvas).toHaveAttribute('data-airborne', 'true', { timeout: 25000 });
-	await page.screenshot({
-		path: testInfo.outputPath('marble-jump-first-flight.png'),
-		fullPage: true,
-	});
+	await expect
+		.poll(() => page.evaluate(() => window.__marbleFlightSeen), { timeout: 25000 })
+		.toBe(true);
 	await expect(page.getByText('I mål! En runde til?')).toBeVisible({ timeout: 30000 });
 	await expect(canvas).toHaveAttribute('data-airborne', 'false');
+	await page.screenshot({
+		path: testInfo.outputPath('marble-jump-first-finished.png'),
+		fullPage: true,
+	});
 });
