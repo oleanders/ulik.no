@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 
 test.setTimeout(120000);
+test.use({
+	video: { mode: 'on', size: { width: 1100, height: 900 } },
+	viewport: { width: 1100, height: 900 },
+});
 
 async function openTrack(page) {
 	const errors = [];
@@ -193,11 +197,6 @@ test('a first-slot jump has a downhill run-up and visibly builds speed before ta
 });
 
 test.describe('natural rolling and finish exit', () => {
-	test.use({
-		video: { mode: 'on', size: { width: 1100, height: 900 } },
-		viewport: { width: 1100, height: 900 },
-	});
-
 	test('rolling stays visible through the finish, falls away, disappears and replays', async ({
 		page,
 	}, testInfo) => {
