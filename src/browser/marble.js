@@ -193,13 +193,7 @@ function createCourse(track) {
 	const chalk = standard('#faf7ed');
 	const dark = standard('#345d4f');
 	for (const span of railSpans(track)) {
-		const runupEnd = span.findIndex((point) => point.kind !== 'runup');
-		for (const side of [-1, 1]) {
-			if (runupEnd > 1) {
-				addMesh(group, railGeometry(span.slice(0, runupEnd), side), brass);
-				addMesh(group, railGeometry(span.slice(runupEnd - 1), side), metal);
-			} else addMesh(group, railGeometry(span, side), metal);
-		}
+		for (const side of [-1, 1]) addMesh(group, railGeometry(span, side), metal);
 	}
 	for (let distance = 0.1; distance < track.length; distance += 0.59) {
 		const point = sampleTrack(track, distance);
