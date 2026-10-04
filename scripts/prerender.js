@@ -1,4 +1,5 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { JSDOM } from 'jsdom';
 import { handle } from '../src/browser/tools.js';
 
@@ -44,8 +45,8 @@ for (const route of routes) {
 	// The same Elm views supply the no-JavaScript fallback. Browser.application
 	// replaces this body on startup; no second copy of the UI is maintained.
 	dom.window.document.body.insertAdjacentHTML('beforeend', scripts);
-	const directory = `build${route === '/' ? '' : route}`;
-	await mkdir(directory, { recursive: true });
-	await writeFile(`${directory}/index.html`, dom.serialize());
+	const file = route === '/' ? 'build/index.html' : `build${route}.html`;
+	await mkdir(dirname(file), { recursive: true });
+	await writeFile(file, dom.serialize());
 	dom.window.close();
 }
