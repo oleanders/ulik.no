@@ -12,6 +12,7 @@ import Pages.Diff as Diff
 import Pages.Falling as Falling
 import Pages.Flow as Flow
 import Pages.Illusions as Illusions
+import Pages.Marble as Marble
 import Pages.Morse as Morse
 import Pages.Nato as Nato
 import Pages.Robot as Robot
@@ -36,6 +37,7 @@ type Page
     | PlaceholderPage
     | NotFoundPage
     | FlowPage Flow.Model
+    | MarblePage Marble.Model
     | RobotPage Robot.Model
     | FallingPage Falling.Model
     | NatoPage Nato.Model
@@ -68,6 +70,7 @@ type Msg
     | DiscoveryMsg Discovery.Msg
     | DeployMsg Deploy.Msg
     | FlowMsg Flow.Msg
+    | MarbleMsg Marble.Msg
     | RobotMsg Robot.Msg
     | FallingMsg Falling.Msg
     | NatoMsg Nato.Msg
@@ -160,6 +163,9 @@ initPage route url =
                 Projects.Flow ->
                     Flow.init (Url.toString url) |> Tuple.mapBoth FlowPage (Cmd.map FlowMsg)
 
+                Projects.Marble ->
+                    Marble.init |> Tuple.mapBoth MarblePage (Cmd.map MarbleMsg)
+
                 Projects.Robot ->
                     Robot.init |> Tuple.mapBoth RobotPage (Cmd.map RobotMsg)
 
@@ -242,6 +248,13 @@ update msg model =
             in
             ( { model | page = FlowPage page }, Cmd.map FlowMsg cmd )
 
+        ( MarbleMsg childMsg, MarblePage childModel ) ->
+            let
+                ( page, cmd ) =
+                    Marble.update childMsg childModel
+            in
+            ( { model | page = MarblePage page }, Cmd.map MarbleMsg cmd )
+
         ( RobotMsg childMsg, RobotPage childModel ) ->
             let
                 ( page, cmd ) =
@@ -304,6 +317,9 @@ subscriptions model =
         , case model.page of
             FlowPage page ->
                 Sub.map FlowMsg (Flow.subscriptions page)
+
+            MarblePage page ->
+                Sub.map MarbleMsg (Marble.subscriptions page)
 
             RobotPage page ->
                 Sub.map RobotMsg (Robot.subscriptions page)
@@ -410,6 +426,9 @@ viewPage model =
 
         FlowPage page ->
             Html.map FlowMsg (Flow.view page)
+
+        MarblePage page ->
+            Html.map MarbleMsg (Marble.view page)
 
         RobotPage page ->
             Html.map RobotMsg (Robot.view page)
