@@ -15,16 +15,16 @@
 		"test:e2e": "playwright test"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.5.14",
+		"@biomejs/biome": "^2.5.15",
 		"@playwright/test": "^1.63.0",
-		"@vitest/coverage-v8": "^5.0.2",
-		"vite": "^8.3.1",
-		"vitest": "^5.0.2",
+		"@vitest/coverage-v8": "^5.0.3",
+		"vite": "^8.3.2",
+		"vitest": "^5.0.3",
 		"elm": "0.19.1-6",
 		"elm-watch": "1.2.8",
 		"elm-format": "0.8.8",
 		"elm-test": "0.19.1-revision17",
-		"jsdom": "^27.0.0"
+		"jsdom": "^30.1.1"
 	},
 	"dependencies": {
 		"diff": "^9.0.0",
