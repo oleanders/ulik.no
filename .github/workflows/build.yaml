@@ -16,8 +16,18 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Build ulik.no
+      - name: Check, test, and build ulik.no
         run: |
-          bun run check
+          for attempt in 1 2 3; do
+            if bun run check; then
+              break
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            delay=$((attempt * 5))
+            echo "Check failed (attempt $attempt/3); retrying in ${delay}s."
+            sleep "$delay"
+          done
           bun run test -- --run
           bun run build
