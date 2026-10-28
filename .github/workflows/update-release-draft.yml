@@ -25,7 +25,7 @@ jobs:
         id: tag-version
         with:
           output-only: true
-          prefix: 'v'
+          prefix: "v"
 
       - run: echo "Version ${{ steps.tag-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
 
