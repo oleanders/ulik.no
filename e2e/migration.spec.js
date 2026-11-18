@@ -378,7 +378,10 @@ test('NATO preserves setup bounds, speech language, scoring, replay and cancella
 	await page.getByLabel('Maks', { exact: true }).selectOption('2');
 	await page.getByLabel('Min', { exact: true }).selectOption('2');
 	await expect(page.getByLabel('Min', { exact: true }).locator('option')).toHaveCount(2);
-	await expect(page.getByLabel('Maks', { exact: true }).locator('option').first()).toHaveValue('2');
+	await expect(page.getByLabel('Maks', { exact: true }).locator('option').first()).toHaveAttribute(
+		'value',
+		'2',
+	);
 	await page.getByRole('button', { name: 'Start spill' }).click();
 	await expect(page.getByRole('button', { name: 'Spiller av…' })).toBeDisabled();
 	await expect(page.getByLabel('Språk for opplesning')).toBeDisabled();
@@ -403,8 +406,9 @@ test('NATO preserves setup bounds, speech language, scoring, replay and cancella
 	expect(await page.evaluate(() => window.__speech.calls[1].voice.voiceURI)).toBe('test-british');
 	await page.evaluate(() => window.__speech.finish());
 	await page.getByRole('button', { name: 'Vis ord', exact: true }).click();
-	const words = await page.getByLabel('Ord i runden').locator('.round-word').allTextContents();
-	expect(words).toHaveLength(2);
+	const roundWords = page.getByLabel('Ord i runden').locator('.round-word');
+	await expect(roundWords).toHaveCount(2);
+	const words = await roundWords.allTextContents();
 	expect(await page.evaluate(() => window.__speech.calls[1].text)).toBe(words.join(' '));
 	const answer = words.map((word) => word[0]).join('');
 	await page.getByRole('button', { name: 'Skjul ord', exact: true }).click();

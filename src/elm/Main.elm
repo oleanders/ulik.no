@@ -210,10 +210,10 @@ update msg model =
                 Ok ( "navigation", url ) ->
                     if url == Url.toString model.url then
                         let
-                            ( page, cmd ) =
+                            ( _, cmd ) =
                                 initPage model.route model.url
                         in
-                        ( { model | page = page }, cmd )
+                        ( model, cmd )
 
                     else
                         ( model, Cmd.none )
