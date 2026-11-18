@@ -13,6 +13,9 @@ updates:
       all-npm-dependencies:
         patterns:
           - "*"
+      bun-security:
+        applies-to: security-updates
+        patterns: ["*"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -23,3 +26,9 @@ updates:
       - "github-actions"
     assignees:
       - "oleanders"
+    groups:
+      github-actions:
+        patterns: ["*"]
+      github-actions-security:
+        applies-to: security-updates
+        patterns: ["*"]
