@@ -237,10 +237,15 @@ test.describe('natural rolling and finish exit', () => {
 			});
 		});
 		await page.getByRole('button', { name: 'Slipp kula ↗', exact: true }).click();
-		// Sample the fall at fixed intervals even on a slow WebGL renderer.
-		for (let elapsed = 0; elapsed < 45000; elapsed += 100) {
-			await page.clock.fastForward(100);
-			if ((await canvas.getAttribute('data-phase')) === 'gone') break;
+		// Sample the track and the short fall independently of the renderer's frame rate.
+		const trackMs = Number(await canvas.getAttribute('data-duration')) * 1000;
+		const totalMs = Number(await canvas.getAttribute('data-total-duration')) * 1000;
+		await page.clock.fastForward(16);
+		for (let frame = 0; frame < 10; frame++) {
+			await page.clock.fastForward(Math.ceil(trackMs / 10));
+		}
+		for (let frame = 0; frame < 5; frame++) {
+			await page.clock.fastForward(Math.ceil((totalMs - trackMs) / 4));
 		}
 		await page.clock.resume();
 		await expect(page.getByText('I mål! En runde til?')).toBeVisible();
