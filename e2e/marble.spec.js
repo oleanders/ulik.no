@@ -215,6 +215,8 @@ test.describe('natural rolling and finish exit', () => {
 				height,
 			},
 		});
+		await page.clock.install();
+		await page.clock.pauseAt(new Date(Date.now() + 1000));
 		await canvas.evaluate((element) => {
 			window.__marbleMotionFrames = [];
 			const observer = new MutationObserver(() => {
@@ -235,7 +237,13 @@ test.describe('natural rolling and finish exit', () => {
 			});
 		});
 		await page.getByRole('button', { name: 'Slipp kula ↗', exact: true }).click();
-		await expect(page.getByText('I mål! En runde til?')).toBeVisible({ timeout: 45000 });
+		// Sample the fall at fixed intervals even on a slow WebGL renderer.
+		for (let elapsed = 0; elapsed < 45000; elapsed += 100) {
+			await page.clock.fastForward(100);
+			if ((await canvas.getAttribute('data-phase')) === 'gone') break;
+		}
+		await page.clock.resume();
+		await expect(page.getByText('I mål! En runde til?')).toBeVisible();
 		const frames = await page.evaluate(() => window.__marbleMotionFrames);
 		await testInfo.attach('marble-motion-frames.json', {
 			body: JSON.stringify(frames, null, 2),
