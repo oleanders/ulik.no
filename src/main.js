@@ -3,6 +3,7 @@ import './styles/shell.css';
 import './styles/audio.css';
 import './styles/experiments.css';
 import './styles/tools.css';
+import './styles/marble.css';
 import * as audio from './browser/audio.js';
 import * as falling from './browser/falling.js';
 import * as flow from './browser/flow.js';
@@ -38,6 +39,7 @@ document.body.replaceChildren();
 const app = window.Elm.Main.init({ flags: { version: __APP_VERSION__, prerender: false } });
 const adapters = { audio, flow, falling, tools, preview };
 let robot;
+let marble;
 let routeRevision = 0;
 app.ports.send.subscribe((command) => {
 	if (command.domain === 'navigation') {
@@ -46,6 +48,7 @@ app.ports.send.subscribe((command) => {
 		const position = command.scrollToTop ? [0, 0] : scrollPositions.get(currentEntry) || [0, 0];
 		for (const adapter of Object.values(adapters)) adapter.dispose();
 		robot?.dispose();
+		marble?.dispose();
 		requestAnimationFrame(() => {
 			if (revision !== routeRevision) return;
 			app.ports.receive.send({ domain: 'navigation', url: command.url });
@@ -53,6 +56,24 @@ app.ports.send.subscribe((command) => {
 				if (revision === routeRevision) window.scrollTo(...position);
 			});
 		});
+		return;
+	}
+	if (command.domain === 'marble') {
+		const revision = routeRevision;
+		import('./browser/marble.js')
+			.then((module) => {
+				marble = module;
+				if (revision === routeRevision)
+					marble.handle(command, (event) => app.ports.receive.send(event));
+			})
+			.catch(() => {
+				if (revision === routeRevision)
+					app.ports.receive.send({
+						domain: 'marble',
+						action: 'error',
+						message: 'Kunne ikke laste 3D-banen. Last siden på nytt og prøv igjen.',
+					});
+			});
 		return;
 	}
 	if (command.domain === 'robot') {

@@ -35,7 +35,7 @@ Installer nettleseren før første E2E-kjøring: `bunx playwright install chromi
 
 Alternativer og tilstander uttrykkes som union types. Records brukes til data som naturlig hører sammen, for eksempel en prosjektbeskrivelse eller et sett feltinnstillinger. Det er ingen generell side- eller effektplattform å lære først.
 
-Portmeldinger har et `domain` og en `action`; hver adapter dekoder sitt avgrensede innhold. Ved navigasjon ryddes ressursene før neste side startes. Det stopper animasjoner, lyd og skjermdeling, også når en eldre asynkron forespørsel kommer tilbake sent. Three.js lastes først når robotsiden åpnes.
+Portmeldinger har et `domain` og en `action`; hver adapter dekoder sitt avgrensede innhold. Ved navigasjon ryddes ressursene før neste side startes. Det stopper animasjoner, lyd og skjermdeling, også når en eldre asynkron forespørsel kommer tilbake sent. Three.js lastes først når robotsiden eller kulebanen åpnes.
 
 `diff`-biblioteket beholdes for de eksisterende linje- og ordforskjellene. Elm eier input, visning, statistikk og versjonering av resultatet. WebGL og canvas-rendering ligger i JavaScript, mens kontrollene og deres tilstand ligger i Elm.
 
@@ -44,3 +44,11 @@ Portmeldinger har et `domain` og en `action`; hver adapter dekoder sitt avgrense
 Produksjonsbygget ligger i `build/`. `scripts/prerender.js` kjører de samme Elm-visningene i JSDOM og lager HTML for alle eksisterende ruter. Katalog, lenker, beskrivelser og illusjonenes SVG er dermed tilgjengelige uten JavaScript; interaksjon krever JavaScript. Nettleseren starter deretter den samme Elm-appen.
 
 `APP_VERSION` vises i bunnteksten. Push til `main` publiserer fortsatt til beta. En publisert release bruker den eksisterende produksjonsflyten. Pull requests får egne Firebase-preview-kanaler, bygget uten deploy-hemmeligheter og publisert fra en separat runner. Migreringen endrer ikke disse publiseringsmålene.
+
+## Kulebane
+
+`/projects/kule-bane` har en ferdig tredelt bane med en fast startrampe som lar kula bygge fart før første del. Hver knapp bytter mellom sving, spiral og hopp med like endepunkter. Elm eier valg og kjøretilstand; Three.js tegner banen og animerer kula langs et deterministisk spor. Dette er en guidet animasjon, ikke en generell fysikksimulator. Endringer i bane eller kulefarge stopper turen og setter kula ved start. Kameraet kan endres underveis. Rullingen beregnes fra tilbakelagt banelengde og kulas radius; rotasjonen avhenger ikke av bildefrekvensen. Farten begrenses mykt før tette svinger. Etter mål går kula ut på en kort skinne, beholder farten og faller bort under gravitasjon før turen avsluttes.
+
+`marble-path.test.js` verifiserer kontinuitet og hopp for alle 27 banekombinasjoner. `marble-motion.test.js` dekker rulling, bevart spinn, overgangen til fritt fall og replay. `MarbleTest.elm` dekker kontrolltilstand og avbrudd; `e2e/marble.spec.js` dekker ekte WebGL, gjentatte turer, kamerabytte, mobil, redusert bevegelse, feil og navigasjon.
+
+Forsidebildet `static/previews/kule-bane-start.webp` er et beskåret skjermbilde av den faktiske 3D-starten, tatt av Playwright med følg-kamera. Det er lagret i kortenes 360:160-format, uten kontroller eller annen nettleser-UI.

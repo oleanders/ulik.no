@@ -12,6 +12,7 @@ const routes = [
 	...[
 		'lik-lik',
 		'robot-tohjul',
+		'kule-bane',
 		'fall-haug',
 		'flyt-felt',
 		'fonetisk-alfabet',

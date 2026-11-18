@@ -3,6 +3,7 @@ module Projects exposing (Category(..), Id(..), Project, Status(..), all, byId, 
 
 type Id
     = Illusion
+    | Marble
     | Robot
     | Falling
     | Flow
@@ -45,6 +46,15 @@ all =
       , title = "lik≠lik"
       , description = "Tre optiske illusjoner du kan undersøke ved å fjerne omgivelsene."
       , tags = [ "illusjon", "persepsjon", "interaksjon" ]
+      , status = Active
+      }
+    , { id = Marble
+      , category = Play
+      , hook = "Tre biter. Bare slipp kula."
+      , interaction = "Trykk · bytt · 3D"
+      , title = "kule≠bane"
+      , description = "En ferdig kulebane med skinnende skinner. Bytt svinger, spiraler og hopp med ett trykk."
+      , tags = [ "three.js", "3d", "kulebane" ]
       , status = Active
       }
     , { id = Robot
@@ -127,6 +137,9 @@ slug id =
     case id of
         Illusion ->
             "lik-lik"
+
+        Marble ->
+            "kule-bane"
 
         Robot ->
             "robot-tohjul"
