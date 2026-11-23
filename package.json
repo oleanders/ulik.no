@@ -17,13 +17,13 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.6.8",
 		"@playwright/test": "^1.65.1",
-		"@vitest/coverage-v8": "^5.1.0",
+		"@vitest/coverage-v8": "^5.1.1",
 		"vite": "^8.3.8",
-		"vitest": "^5.1.0",
+		"vitest": "^5.1.1",
 		"elm": "0.19.1-6",
 		"elm-watch": "1.2.9",
 		"elm-format": "0.8.8",
-		"elm-test": "0.19.1-revision17",
+		"elm-test": "0.19.1-revision18",
 		"jsdom": "^31.0.1"
 	},
 	"dependencies": {
